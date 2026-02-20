@@ -1,4 +1,5 @@
 import { Activity, Brain, BarChart3, Zap, Shield, LineChart, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import MatchCard from "@/components/MatchCard";
 import FeatureCard from "@/components/FeatureCard";
@@ -35,12 +36,12 @@ const Index = () => {
             The edge serious bettors need.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up-delay-3">
-            <button className="gradient-primary text-primary-foreground font-bold px-8 py-3.5 rounded-lg text-lg hover:opacity-90 transition-opacity flex items-center gap-2">
+            <Link to="/dashboard" className="gradient-primary text-primary-foreground font-bold px-8 py-3.5 rounded-lg text-lg hover:opacity-90 transition-opacity flex items-center gap-2">
               Start 7-Day Free Trial <ArrowRight className="w-5 h-5" />
-            </button>
-            <button className="text-muted-foreground hover:text-foreground transition-colors text-sm font-mono">
+            </Link>
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-mono">
               View live demo →
-            </button>
+            </Link>
           </div>
 
           {/* Stats bar */}
