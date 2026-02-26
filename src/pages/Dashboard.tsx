@@ -11,6 +11,7 @@ import AIInsight from "@/components/dashboard/AIInsight";
 import SuggestedBets from "@/components/dashboard/SuggestedBets";
 import LiveGamesPanel from "@/components/dashboard/LiveGamesPanel";
 import GameSchedulePanel from "@/components/dashboard/GameSchedulePanel";
+import EliteDDSnapshot from "@/components/dashboard/EliteDDSnapshot";
 import TopEdgeRibbon from "@/components/TopEdgeRibbon";
 import Navbar from "@/components/Navbar";
 import { cn } from "@/lib/utils";
@@ -117,6 +118,7 @@ const Dashboard = () => {
             {/* Right Column */}
             <div className="space-y-6">
               <LiveProbabilityPanel match={selectedMatch} />
+              <EliteDDSnapshot />
               <AlertsCenter />
               <BankrollManager />
             </div>
