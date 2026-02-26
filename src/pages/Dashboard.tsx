@@ -8,7 +8,7 @@ import AlertsCenter from "@/components/dashboard/AlertsCenter";
 import BankrollManager from "@/components/dashboard/BankrollManager";
 import OddsMovementChart from "@/components/dashboard/OddsMovementChart";
 import AIInsight from "@/components/dashboard/AIInsight";
-import SuggestedBets from "@/components/dashboard/SuggestedBets";
+
 import LiveGamesPanel from "@/components/dashboard/LiveGamesPanel";
 import GameSchedulePanel from "@/components/dashboard/GameSchedulePanel";
 import TopEdgeRibbon from "@/components/TopEdgeRibbon";
@@ -109,7 +109,7 @@ const Dashboard = () => {
             <div className="lg:col-span-2 space-y-6">
               <OddsMovementChart match={selectedMatch} full={isPro} />
               <AIInsight match={selectedMatch} />
-              <SuggestedBets match={selectedMatch} />
+              
               <EdgeEnginePanel match={selectedMatch} />
               <SmartMoneyDashboard match={selectedMatch} />
             </div>
