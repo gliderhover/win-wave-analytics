@@ -10,6 +10,7 @@ import Matches from "./pages/Matches";
 import Performance from "./pages/Performance";
 import Pricing from "./pages/Pricing";
 import Suggestions from "./pages/Suggestions";
+import Elite from "./pages/Elite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/performance" element={<Performance />} />
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/elite" element={<Elite />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
