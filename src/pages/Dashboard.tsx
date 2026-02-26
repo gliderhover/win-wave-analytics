@@ -9,6 +9,8 @@ import BankrollManager from "@/components/dashboard/BankrollManager";
 import OddsMovementChart from "@/components/dashboard/OddsMovementChart";
 import AIInsight from "@/components/dashboard/AIInsight";
 import SuggestedBets from "@/components/dashboard/SuggestedBets";
+import LiveGamesPanel from "@/components/dashboard/LiveGamesPanel";
+import GameSchedulePanel from "@/components/dashboard/GameSchedulePanel";
 import TopEdgeRibbon from "@/components/TopEdgeRibbon";
 import Navbar from "@/components/Navbar";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,20 @@ const Dashboard = () => {
           {/* Match Selector */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground mb-4">Dashboard</h1>
+
+            {/* Live Games + Game Schedule */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <LiveGamesPanel onSelectMatch={(id) => {
+                const match = mockMatches.find(m => m.id === id);
+                if (match) setSelectedMatch(match);
+              }} />
+              <GameSchedulePanel onSelectMatch={(id) => {
+                const match = mockMatches.find(m => m.id === id);
+                if (match) setSelectedMatch(match);
+              }} />
+            </div>
+
+            {/* Match Selector Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2">
               {mockMatches.map(match => (
                 <button
