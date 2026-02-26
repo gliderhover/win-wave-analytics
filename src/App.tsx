@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Matches from "./pages/Matches";
 import Performance from "./pages/Performance";
 import Pricing from "./pages/Pricing";
+import Suggestions from "./pages/Suggestions";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/performance" element={<Performance />} />
+            <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
