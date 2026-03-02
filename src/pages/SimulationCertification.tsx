@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useI18n } from "@/i18n/I18nContext";
 import { mockCertifiedAnalysts, CERTIFICATION_MIN_BETS, CERTIFICATION_MAX_DRAWDOWN, CertifiedAnalyst } from "@/lib/simulationData";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Award, Shield, Star, FileText, Download } from "lucide-react";
@@ -15,59 +16,63 @@ const medalColors: Record<string, string> = {
   certified: "text-primary",
 };
 
-const CertificatePreview = ({ analyst, onClose }: { analyst: CertifiedAnalyst; onClose: () => void }) => (
-  <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-    <DialogContent className="gradient-card border-primary/30 max-w-lg">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2 text-foreground">
-          <Award className="w-5 h-5 text-primary" />
-          Certificate Preview
-        </DialogTitle>
-      </DialogHeader>
+const CertificatePreview = ({ analyst, onClose }: { analyst: CertifiedAnalyst; onClose: () => void }) => {
+  const { t } = useI18n();
+  return (
+    <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
+      <DialogContent className="gradient-card border-primary/30 max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <Award className="w-5 h-5 text-primary" />
+            {t("certification.certificatePreview")}
+          </DialogTitle>
+        </DialogHeader>
 
-      <div className="border-2 border-primary/30 rounded-xl p-8 text-center bg-background relative">
-        <div className="absolute top-3 right-3 text-[9px] font-mono text-muted-foreground border border-border rounded p-1.5">
-          QR
+        <div className="border-2 border-primary/30 rounded-xl p-8 text-center bg-background relative">
+          <div className="absolute top-3 right-3 text-[9px] font-mono text-muted-foreground border border-border rounded p-1.5">
+            QR
+          </div>
+
+          <Award className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h2 className="text-xs font-mono text-primary uppercase tracking-widest mb-2">Win-Wave Analytics</h2>
+          <h3 className="text-2xl font-bold text-foreground mb-1">{t("certification.certifiedAnalystTitle")}</h3>
+          <p className="text-sm text-muted-foreground mb-6">(Simulation)</p>
+
+          <div className="text-lg font-bold text-foreground mb-1">{analyst.flag} {analyst.username}</div>
+          <div className="text-sm text-muted-foreground mb-4">Season {analyst.year}</div>
+
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div>
+              <div className="text-[10px] text-muted-foreground">{t("certification.rank")}</div>
+              <div className="font-mono text-lg font-bold text-foreground">#{analyst.rank}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">{t("leaderboard.score")}</div>
+              <div className="font-mono text-lg font-bold text-primary">{analyst.score}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-muted-foreground">{t("portfolio.roi")}</div>
+              <div className="font-mono text-lg font-bold text-signal-bullish">+{analyst.roi}%</div>
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <div className="text-[10px] text-muted-foreground">________________________________</div>
+            <div className="text-xs text-muted-foreground mt-1">Win-Wave Analytics • Paper Betting Simulation</div>
+          </div>
         </div>
 
-        <Award className="w-12 h-12 text-primary mx-auto mb-4" />
-        <h2 className="text-xs font-mono text-primary uppercase tracking-widest mb-2">Win-Wave Analytics</h2>
-        <h3 className="text-2xl font-bold text-foreground mb-1">Certified Analyst</h3>
-        <p className="text-sm text-muted-foreground mb-6">(Simulation)</p>
-
-        <div className="text-lg font-bold text-foreground mb-1">{analyst.flag} {analyst.username}</div>
-        <div className="text-sm text-muted-foreground mb-4">Season {analyst.year}</div>
-
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div>
-            <div className="text-[10px] text-muted-foreground">Rank</div>
-            <div className="font-mono text-lg font-bold text-foreground">#{analyst.rank}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-muted-foreground">Score</div>
-            <div className="font-mono text-lg font-bold text-primary">{analyst.score}</div>
-          </div>
-          <div>
-            <div className="text-[10px] text-muted-foreground">ROI</div>
-            <div className="font-mono text-lg font-bold text-signal-bullish">+{analyst.roi}%</div>
-          </div>
-        </div>
-
-        <div className="border-t border-border pt-4">
-          <div className="text-[10px] text-muted-foreground">________________________________</div>
-          <div className="text-xs text-muted-foreground mt-1">Win-Wave Analytics • Paper Betting Simulation</div>
-        </div>
-      </div>
-
-      <Button variant="outline" className="w-full mt-2" onClick={() => window.print()}>
-        <Download className="w-4 h-4 mr-2" /> Print / Download
-      </Button>
-    </DialogContent>
-  </Dialog>
-);
+        <Button variant="outline" className="w-full mt-2" onClick={() => window.print()}>
+          <Download className="w-4 h-4 mr-2" /> {t("certification.printDownload")}
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const SimulationCertification = () => {
   const [previewAnalyst, setPreviewAnalyst] = useState<CertifiedAnalyst | null>(null);
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,57 +80,53 @@ const SimulationCertification = () => {
       <div className="pt-24 pb-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <Link to="/simulation" className="flex items-center gap-1 text-xs text-primary font-mono mb-4 hover:underline">
-            <ArrowLeft className="w-3 h-3" /> Back to Simulation
+            <ArrowLeft className="w-3 h-3" /> {t("contest.backToSim")}
           </Link>
 
           <div className="flex items-center gap-2 mb-2">
             <Award className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Annual Certification</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("certification.title")}</h1>
           </div>
           <p className="text-sm text-muted-foreground mb-8">
-            Recognize top paper-betting analysts through verified simulation performance.
+            {t("certification.subtitle")}
           </p>
 
-          {/* What it means */}
           <div className="gradient-card rounded-xl border border-primary/20 p-6 card-glow mb-8">
             <div className="flex items-center gap-2 mb-3">
               <Shield className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-bold text-foreground">Win-Wave Certified Analyst (Simulation)</h3>
+              <h3 className="text-lg font-bold text-foreground">{t("certification.certifiedAnalyst")}</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Top performers in the simulation league earn "Certified Analyst" status at the end of each calendar season.
-              This is a recognition of consistent, disciplined paper-betting performance — not real-money results.
+              {t("certification.whatItMeans")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-secondary/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Star className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Top 100 Ranking</span>
+                  <span className="text-sm font-semibold text-foreground">{t("certification.topRanking")}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Finish in the top 100 of the global leaderboard at season end.</p>
+                <p className="text-xs text-muted-foreground">{t("certification.topRankingDesc")}</p>
               </div>
               <div className="bg-secondary/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Min {CERTIFICATION_MIN_BETS} Bets</span>
+                  <span className="text-sm font-semibold text-foreground">{t("certification.minBets", { count: String(CERTIFICATION_MIN_BETS) })}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Place at least {CERTIFICATION_MIN_BETS} paper bets during the season to qualify.</p>
+                <p className="text-xs text-muted-foreground">{t("certification.minBetsDesc", { count: String(CERTIFICATION_MIN_BETS) })}</p>
               </div>
               <div className="bg-secondary/50 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">MaxDD ≤ {CERTIFICATION_MAX_DRAWDOWN}%</span>
+                  <span className="text-sm font-semibold text-foreground">{t("certification.maxDrawdownLabel", { value: String(CERTIFICATION_MAX_DRAWDOWN) })}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">Maximum drawdown must stay under {CERTIFICATION_MAX_DRAWDOWN}% to prove risk discipline.</p>
+                <p className="text-xs text-muted-foreground">{t("certification.maxDrawdownDesc", { value: String(CERTIFICATION_MAX_DRAWDOWN) })}</p>
               </div>
             </div>
           </div>
 
-          {/* Hall of Fame */}
           <div className="mb-8">
-            <h3 className="text-lg font-bold text-foreground mb-4">🏆 Hall of Fame — 2025 Season</h3>
+            <h3 className="text-lg font-bold text-foreground mb-4">{t("certification.hallOfFame")}</h3>
 
-            {/* Top 3 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {mockCertifiedAnalysts.filter(a => a.rank <= 3).map(a => (
                 <div key={a.rank} className={cn(
@@ -136,32 +137,31 @@ const SimulationCertification = () => {
                 )}>
                   <div className="text-3xl mb-2">{["🥇", "🥈", "🥉"][a.rank - 1]}</div>
                   <div className="text-lg font-bold text-foreground">{a.flag} {a.username}</div>
-                  <div className="font-mono text-sm text-muted-foreground mb-3">Score: {a.score}</div>
+                  <div className="font-mono text-sm text-muted-foreground mb-3">{t("leaderboard.score")}: {a.score}</div>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-secondary/50 rounded-lg p-2">
-                      <div className="text-[10px] text-muted-foreground">ROI</div>
+                      <div className="text-[10px] text-muted-foreground">{t("portfolio.roi")}</div>
                       <div className="font-mono text-sm font-bold text-signal-bullish">+{a.roi}%</div>
                     </div>
                     <div className="bg-secondary/50 rounded-lg p-2">
-                      <div className="text-[10px] text-muted-foreground">Bets</div>
+                      <div className="text-[10px] text-muted-foreground">{t("leaderboard.bets")}</div>
                       <div className="font-mono text-sm font-bold text-foreground">{a.bets}</div>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="text-xs w-full" onClick={() => setPreviewAnalyst(a)}>
-                    View Certificate
+                    {t("certification.viewCertificate")}
                   </Button>
                 </div>
               ))}
             </div>
 
-            {/* Rest of certified list */}
             <div className="gradient-card rounded-xl border border-border overflow-hidden">
               <div className="grid grid-cols-[50px_1fr_70px_70px_60px_70px_50px] bg-secondary/50 px-4 py-2.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                 <span>#</span>
                 <span>Analyst</span>
-                <span className="text-right">Score</span>
-                <span className="text-right">ROI</span>
-                <span className="text-right">Bets</span>
+                <span className="text-right">{t("leaderboard.score")}</span>
+                <span className="text-right">{t("portfolio.roi")}</span>
+                <span className="text-right">{t("leaderboard.bets")}</span>
                 <span className="text-right">MaxDD</span>
                 <span></span>
               </div>
@@ -180,7 +180,7 @@ const SimulationCertification = () => {
           </div>
 
           <div className="text-center text-[10px] text-muted-foreground font-mono">
-            Simulation only • No real money • No payouts • For educational/entertainment purposes only. 18+.
+            {t("simulation.disclaimer")} • {t("simulation.footerDisclaimer")}
           </div>
         </div>
       </div>

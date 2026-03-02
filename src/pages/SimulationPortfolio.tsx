@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useI18n } from "@/i18n/I18nContext";
 import {
   getSimulationState, saveSimulationState, settleAllOpenBets, getStats,
   generateBankrollHistory, SimulationState, VIRTUAL_CURRENCY, resetSimulation,
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 const SimulationPortfolio = () => {
   const [simState, setSimState] = useState<SimulationState>(getSimulationState);
   const [leagueFilter, setLeagueFilter] = useState("all");
+  const { t } = useI18n();
 
   const stats = getStats(simState.bets);
   const bankrollHistory = useMemo(() => generateBankrollHistory(simState), [simState.bankroll]);
@@ -47,39 +49,37 @@ const SimulationPortfolio = () => {
       <div className="pt-24 pb-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <Link to="/simulation" className="flex items-center gap-1 text-xs text-primary font-mono mb-4 hover:underline">
-            <ArrowLeft className="w-3 h-3" /> Back to Simulation
+            <ArrowLeft className="w-3 h-3" /> {t("contest.backToSim")}
           </Link>
 
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Portfolio</h1>
-              <p className="text-xs text-muted-foreground">Your virtual betting performance</p>
+              <h1 className="text-2xl font-bold text-foreground">{t("portfolio.title")}</h1>
+              <p className="text-xs text-muted-foreground">{t("portfolio.subtitle")}</p>
             </div>
             <div className="flex gap-2">
               {openBets.length > 0 && (
                 <Button variant="outline" size="sm" className="text-xs" onClick={handleSettleAll}>
-                  <CheckCircle className="w-3 h-3 mr-1" /> Settle All
+                  <CheckCircle className="w-3 h-3 mr-1" /> {t("portfolio.settleAll")}
                 </Button>
               )}
               <Button variant="outline" size="sm" className="text-xs text-signal-bearish" onClick={handleReset}>
-                <RotateCcw className="w-3 h-3 mr-1" /> Reset
+                <RotateCcw className="w-3 h-3 mr-1" /> {t("portfolio.reset")}
               </Button>
             </div>
           </div>
 
-          {/* Responsible Play Reminder */}
           <div className="bg-signal-neutral/10 border border-signal-neutral/20 rounded-lg p-3 mb-6 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-signal-neutral shrink-0" />
-            <span className="text-xs text-signal-neutral">Simulation only. No real-money wagering. For educational/entertainment purposes.</span>
+            <span className="text-xs text-signal-neutral">{t("portfolio.responsiblePlay")}</span>
           </div>
 
-          {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
-              { icon: Coins, label: "Bankroll", value: `${simState.bankroll.toLocaleString()}`, color: "text-foreground" },
-              { icon: TrendingUp, label: "ROI", value: `${stats.roi >= 0 ? "+" : ""}${stats.roi}%`, color: stats.roi >= 0 ? "text-signal-bullish" : "text-signal-bearish" },
-              { icon: Target, label: "Win Rate", value: `${stats.winRate}%`, color: "text-primary" },
-              { icon: BarChart3, label: "Max Drawdown", value: `${stats.maxDrawdownPct}%`, color: "text-signal-bearish" },
+              { icon: Coins, label: t("portfolio.bankroll"), value: `${simState.bankroll.toLocaleString()}`, color: "text-foreground" },
+              { icon: TrendingUp, label: t("portfolio.roi"), value: `${stats.roi >= 0 ? "+" : ""}${stats.roi}%`, color: stats.roi >= 0 ? "text-signal-bullish" : "text-signal-bearish" },
+              { icon: Target, label: t("portfolio.winRate"), value: `${stats.winRate}%`, color: "text-primary" },
+              { icon: BarChart3, label: t("portfolio.maxDrawdown"), value: `${stats.maxDrawdownPct}%`, color: "text-signal-bearish" },
             ].map(s => (
               <div key={s.label} className="gradient-card rounded-xl border border-border p-4">
                 <s.icon className={`w-4 h-4 ${s.color} mb-1`} />
@@ -89,9 +89,8 @@ const SimulationPortfolio = () => {
             ))}
           </div>
 
-          {/* Bankroll chart */}
           <div className="gradient-card rounded-xl border border-border p-5 mb-6">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Bankroll Over Time ({VIRTUAL_CURRENCY})</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">{t("portfolio.bankrollOverTime")} ({VIRTUAL_CURRENCY})</h3>
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={bankrollHistory}>
@@ -104,32 +103,30 @@ const SimulationPortfolio = () => {
             </div>
           </div>
 
-          {/* League filter */}
           {uniqueLeagues.length > 1 && (
             <div className="mb-4">
               <Select value={leagueFilter} onValueChange={setLeagueFilter}>
                 <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Leagues</SelectItem>
+                  <SelectItem value="all">{t("nav.allLeagues")}</SelectItem>
                   {uniqueLeagues.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           )}
 
-          {/* Tabs */}
           <Tabs defaultValue="open">
             <TabsList className="mb-4">
-              <TabsTrigger value="open">Open Bets ({filteredOpen.length})</TabsTrigger>
-              <TabsTrigger value="settled">Settled Bets ({filteredSettled.length})</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="open">{t("portfolio.openBets")} ({filteredOpen.length})</TabsTrigger>
+              <TabsTrigger value="settled">{t("portfolio.settledBets")} ({filteredSettled.length})</TabsTrigger>
+              <TabsTrigger value="analytics">{t("portfolio.analytics")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="open">
               {filteredOpen.length === 0 ? (
                 <div className="gradient-card rounded-xl border border-border p-8 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">No open bets</p>
-                  <Link to="/simulation" className="text-xs text-primary hover:underline">Place your first paper bet →</Link>
+                  <p className="text-sm text-muted-foreground mb-1">{t("portfolio.noOpenBets")}</p>
+                  <Link to="/simulation" className="text-xs text-primary hover:underline">{t("portfolio.placeFirst")}</Link>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -137,13 +134,13 @@ const SimulationPortfolio = () => {
                     <div key={b.id} className="gradient-card rounded-lg border border-border p-4 flex items-center gap-3">
                       <Badge variant="outline" className="text-[8px] font-mono shrink-0">{b.league}</Badge>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-foreground">{b.flagHome} {b.teamHome} vs {b.teamAway} {b.flagAway}</div>
+                        <div className="text-sm font-semibold text-foreground">{b.flagHome} {b.teamHome} {t("common.vs")} {b.teamAway} {b.flagAway}</div>
                         <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
                           {b.selectionLabel} @ {b.impliedOdds} • Stake: {b.stake.toLocaleString()}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-xs text-muted-foreground">Potential</div>
+                        <div className="text-xs text-muted-foreground">{t("portfolio.potential")}</div>
                         <div className="font-mono text-sm font-bold text-foreground">{b.potentialPayout.toLocaleString()}</div>
                       </div>
                     </div>
@@ -155,7 +152,7 @@ const SimulationPortfolio = () => {
             <TabsContent value="settled">
               {filteredSettled.length === 0 ? (
                 <div className="gradient-card rounded-xl border border-border p-8 text-center">
-                  <p className="text-sm text-muted-foreground">No settled bets yet</p>
+                  <p className="text-sm text-muted-foreground">{t("portfolio.noSettledBets")}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -163,7 +160,7 @@ const SimulationPortfolio = () => {
                     <div key={b.id} className="gradient-card rounded-lg border border-border p-4 flex items-center gap-3">
                       <Badge variant="outline" className="text-[8px] font-mono shrink-0">{b.league}</Badge>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-foreground">{b.flagHome} {b.teamHome} vs {b.teamAway} {b.flagAway}</div>
+                        <div className="text-sm font-semibold text-foreground">{b.flagHome} {b.teamHome} {t("common.vs")} {b.teamAway} {b.flagAway}</div>
                         <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
                           {b.selectionLabel} @ {b.impliedOdds} • Stake: {b.stake.toLocaleString()}
                         </div>
@@ -184,17 +181,17 @@ const SimulationPortfolio = () => {
 
             <TabsContent value="analytics">
               <div className="gradient-card rounded-xl border border-border p-6">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Performance Breakdown</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-4">{t("portfolio.performanceBreakdown")}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: "Total Bets", value: stats.totalBets },
-                    { label: "Win Rate", value: `${stats.winRate}%` },
-                    { label: "Avg Odds", value: stats.avgOdds },
-                    { label: "ROI", value: `${stats.roi >= 0 ? "+" : ""}${stats.roi}%` },
-                    { label: "Total P&L", value: `${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toLocaleString()}` },
-                    { label: "Max Drawdown", value: `${stats.maxDrawdownPct}%` },
-                    { label: "Longest Win Streak", value: stats.longestWinStreak },
-                    { label: "Current Streak", value: `${stats.currentStreak}W` },
+                    { label: t("portfolio.totalBets"), value: stats.totalBets },
+                    { label: t("portfolio.winRate"), value: `${stats.winRate}%` },
+                    { label: t("portfolio.avgOdds"), value: stats.avgOdds },
+                    { label: t("portfolio.roi"), value: `${stats.roi >= 0 ? "+" : ""}${stats.roi}%` },
+                    { label: t("portfolio.totalPnl"), value: `${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toLocaleString()}` },
+                    { label: t("portfolio.maxDrawdown"), value: `${stats.maxDrawdownPct}%` },
+                    { label: t("portfolio.longestWinStreak"), value: stats.longestWinStreak },
+                    { label: t("portfolio.currentStreak"), value: `${stats.currentStreak}W` },
                   ].map(s => (
                     <div key={s.label} className="bg-secondary/50 rounded-lg p-3 text-center">
                       <div className="text-[10px] text-muted-foreground mb-1">{s.label}</div>
@@ -207,7 +204,7 @@ const SimulationPortfolio = () => {
           </Tabs>
 
           <div className="mt-6 text-center text-[10px] text-muted-foreground font-mono">
-            For educational/entertainment purposes only. Not betting advice. 18+.
+            {t("simulation.footerDisclaimer")}
           </div>
         </div>
       </div>

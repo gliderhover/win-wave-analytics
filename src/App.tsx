@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserTierProvider } from "@/contexts/UserTierContext";
 import { LeagueProvider } from "@/contexts/LeagueContext";
+import { I18nProvider } from "@/i18n/I18nContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Matches from "./pages/Matches";
@@ -25,6 +26,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <I18nProvider>
       <UserTierProvider>
         <LeagueProvider>
           <Toaster />
@@ -49,6 +51,7 @@ const App = () => (
           </BrowserRouter>
         </LeagueProvider>
       </UserTierProvider>
+      </I18nProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
