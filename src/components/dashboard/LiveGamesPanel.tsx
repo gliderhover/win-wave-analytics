@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { scheduleMatches, ScheduleMatch } from "@/lib/scheduleData";
 import { mockMatches } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
+import { useLeague } from "@/contexts/LeagueContext";
+import { getAllMatches, filterByLeague } from "@/lib/multiLeagueData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,12 +31,22 @@ const confColors: Record<string, string> = {
 
 const LiveGamesPanel = ({ onSelectMatch }: LiveGamesPanelProps) => {
   const { isPro } = useUserTier();
+  const { selectedLeague } = useLeague();
   const navigate = useNavigate();
 
+  const allLive = useMemo(() =>
+    getAllMatches().filter(m => m.status === "LIVE"),
+  []);
+
   const [liveMatches, setLiveMatches] = useState<ScheduleMatch[]>(() =>
-    scheduleMatches.filter(m => m.status === "LIVE")
+    filterByLeague(allLive, selectedLeague)
   );
   const [isUpdating, setIsUpdating] = useState(false);
+
+  // Re-filter when league changes
+  useEffect(() => {
+    setLiveMatches(filterByLeague(allLive, selectedLeague));
+  }, [selectedLeague, allLive]);
 
   const simulateRefresh = useCallback(() => {
     setIsUpdating(true);
@@ -120,14 +132,16 @@ const LiveGamesPanel = ({ onSelectMatch }: LiveGamesPanelProps) => {
                       <span className="truncate">{m.teamAway}</span>
                       <span>{m.flagAway}</span>
                     </div>
-                    {/* Win prob bar */}
-                    <div className="mt-1.5">
-                      <WinProbBar home={m.modelProbs.home} draw={m.modelProbs.draw} away={m.modelProbs.away} />
-                      <div className="flex justify-between text-[9px] text-muted-foreground font-mono mt-0.5">
-                        <span>{m.modelProbs.home.toFixed(0)}%</span>
-                        <span>{m.modelProbs.draw.toFixed(0)}%</span>
-                        <span>{m.modelProbs.away.toFixed(0)}%</span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Badge variant="outline" className="text-[8px] font-mono h-4 px-1">{m.league}</Badge>
+                      <div className="flex-1">
+                        <WinProbBar home={m.modelProbs.home} draw={m.modelProbs.draw} away={m.modelProbs.away} />
                       </div>
+                    </div>
+                    <div className="flex justify-between text-[9px] text-muted-foreground font-mono mt-0.5">
+                      <span>{m.modelProbs.home.toFixed(0)}%</span>
+                      <span>{m.modelProbs.draw.toFixed(0)}%</span>
+                      <span>{m.modelProbs.away.toFixed(0)}%</span>
                     </div>
                   </div>
 

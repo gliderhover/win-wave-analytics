@@ -1,12 +1,16 @@
 import { useState, useMemo } from "react";
-import { scheduleMatches, ScheduleMatch } from "@/lib/scheduleData";
+import { ScheduleMatch } from "@/lib/scheduleData";
 import { mockMatches } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
+import { useLeague } from "@/contexts/LeagueContext";
+import { getAllMatches, filterByLeague } from "@/lib/multiLeagueData";
+import { leagues } from "@/lib/leagueData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Lock, Eye, Bell, Calendar } from "lucide-react";
+import { Lock, Eye, Bell, Calendar, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -15,20 +19,34 @@ interface GameSchedulePanelProps {
 }
 
 const dayOptions = ["Today", "Tomorrow", "This Week"] as const;
-const leagueOptions = ["All", "World Cup", "Qualifiers", "Friendlies"] as const;
+const sortOptions = ["Soonest", "Highest Edge", "Most Movement"] as const;
 
 const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
   const { isPro } = useUserTier();
+  const { selectedLeague } = useLeague();
   const navigate = useNavigate();
   const [day, setDay] = useState<string>("Today");
-  const [league, setLeague] = useState<string>("All");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("Soonest");
 
   const upcoming = useMemo(() => {
-    let list = scheduleMatches.filter(m => m.status === "UPCOMING");
+    let list = filterByLeague(getAllMatches(), selectedLeague).filter(m => m.status === "UPCOMING");
     if (day !== "This Week") list = list.filter(m => m.kickoffDate === day);
-    if (league !== "All") list = list.filter(m => m.league === league);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter(m => m.teamHome.toLowerCase().includes(q) || m.teamAway.toLowerCase().includes(q));
+    }
+    // Sort
+    if (sortBy === "Highest Edge") list.sort((a, b) => b.edge - a.edge);
+    else if (sortBy === "Most Movement") {
+      list.sort((a, b) => {
+        const movA = Math.abs(a.marketImplied.home - a.openMarketImplied.home);
+        const movB = Math.abs(b.marketImplied.home - b.openMarketImplied.home);
+        return movB - movA;
+      });
+    }
     return list;
-  }, [day, league]);
+  }, [day, selectedLeague, search, sortBy]);
 
   // Group by kickoff time
   const grouped = useMemo(() => {
@@ -63,14 +81,20 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
           <Calendar className="w-4 h-4 text-primary" />
           <h3 className="text-base font-bold text-foreground">Game Schedule</h3>
         </div>
-        <Select value={league} onValueChange={setLeague}>
-          <SelectTrigger className="h-7 w-[120px] text-[10px]"><SelectValue /></SelectTrigger>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="h-7 w-[130px] text-[10px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {leagueOptions.map(l => (
-              <SelectItem key={l} value={l} className="text-xs">{l}</SelectItem>
+            {sortOptions.map(s => (
+              <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-3">
+        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search team…" className="pl-8 h-7 text-xs bg-secondary border-border" />
       </div>
 
       {/* Day chips */}
@@ -126,6 +150,7 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
                               <span>{m.flagAway}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-[9px] text-muted-foreground font-mono">
+                              <Badge variant="outline" className="text-[8px] h-4 px-1">{m.league}</Badge>
                               <span>Open: {m.openMarketImplied.home}%</span>
                               <span>→</span>
                               <span>Now: {m.marketImplied.home}%</span>

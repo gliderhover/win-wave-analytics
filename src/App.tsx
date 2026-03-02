@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserTierProvider } from "@/contexts/UserTierContext";
+import { LeagueProvider } from "@/contexts/LeagueContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Matches from "./pages/Matches";
@@ -19,20 +20,22 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <UserTierProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/matches" element={<Matches />} />
-            <Route path="/performance" element={<Performance />} />
-            <Route path="/suggestions" element={<Suggestions />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/elite" element={<Elite />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <LeagueProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/matches" element={<Matches />} />
+              <Route path="/performance" element={<Performance />} />
+              <Route path="/suggestions" element={<Suggestions />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/elite" element={<Elite />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </LeagueProvider>
       </UserTierProvider>
     </TooltipProvider>
   </QueryClientProvider>
