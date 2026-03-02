@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { mockMatches } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { useLeague } from "@/contexts/LeagueContext";
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 const Dashboard = () => {
   const { isPro } = useUserTier();
   const { selectedLeague } = useLeague();
+  const navigate = useNavigate();
   const [selectedMatch, setSelectedMatch] = useState(mockMatches[0]);
 
   const leagueLabel = selectedLeague === "all"
@@ -88,13 +90,21 @@ const Dashboard = () => {
                 </div>
                 <span className="text-3xl">{selectedMatch.flagB}</span>
               </div>
-              <div className={cn(
-                "flex items-center gap-1 text-xs font-mono font-semibold px-3 py-1 rounded",
-                selectedMatch.signal === "bullish" && "text-signal-bullish bg-signal-bullish/10",
-                selectedMatch.signal === "bearish" && "text-signal-bearish bg-signal-bearish/10",
-                selectedMatch.signal === "neutral" && "text-signal-neutral bg-signal-neutral/10",
-              )}>
-                {selectedMatch.signal.toUpperCase()}
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "flex items-center gap-1 text-xs font-mono font-semibold px-3 py-1 rounded",
+                  selectedMatch.signal === "bullish" && "text-signal-bullish bg-signal-bullish/10",
+                  selectedMatch.signal === "bearish" && "text-signal-bearish bg-signal-bearish/10",
+                  selectedMatch.signal === "neutral" && "text-signal-neutral bg-signal-neutral/10",
+                )}>
+                  {selectedMatch.signal.toUpperCase()}
+                </div>
+                <button
+                  onClick={() => navigate(`/match/${selectedMatch.id}`)}
+                  className="text-[10px] font-mono px-3 py-1.5 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  Match Lab →
+                </button>
               </div>
             </div>
 

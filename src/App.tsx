@@ -17,6 +17,7 @@ import SimulationContest from "./pages/SimulationContest";
 import SimulationPortfolio from "./pages/SimulationPortfolio";
 import SimulationLeaderboard from "./pages/SimulationLeaderboard";
 import SimulationCertification from "./pages/SimulationCertification";
+import MatchLab from "./pages/MatchLab";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="/simulation/portfolio" element={<SimulationPortfolio />} />
               <Route path="/simulation/leaderboard" element={<SimulationLeaderboard />} />
               <Route path="/simulation/certification" element={<SimulationCertification />} />
+              <Route path="/match/:id" element={<MatchLab />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
