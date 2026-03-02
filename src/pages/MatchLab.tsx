@@ -37,7 +37,7 @@ const MatchLab = () => {
       <Navbar />
       <TopEdgeRibbon />
 
-      <div className="pt-8 pb-20 px-4">
+      <div className="pt-[7.5rem] pb-20 px-4">
         <div className="container mx-auto max-w-7xl">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground transition-colors">

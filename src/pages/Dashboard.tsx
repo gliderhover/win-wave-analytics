@@ -38,7 +38,7 @@ const Dashboard = () => {
       <Navbar />
       <TopEdgeRibbon />
 
-      <div className="pt-8 pb-20 px-4">
+      <div className="pt-[7.5rem] pb-20 px-4">
         <div className="container mx-auto">
           {/* Match Selector */}
           <div className="mb-6">

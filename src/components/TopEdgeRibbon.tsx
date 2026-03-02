@@ -18,7 +18,7 @@ const TopEdgeRibbon = () => {
   if (!topEdge) return null;
 
   return (
-    <div className="bg-primary/10 border-b border-primary/20 py-2 px-4 sticky top-16 z-40">
+    <div className="bg-primary/10 border-b border-primary/20 py-2 px-4 fixed top-16 left-0 right-0 z-40">
       <div className="container mx-auto flex items-center justify-center gap-3 text-xs font-mono flex-wrap">
         <TrendingUp className="w-3.5 h-3.5 text-primary" />
         <span className="text-primary font-semibold">{t("topEdge.label")}:</span>
