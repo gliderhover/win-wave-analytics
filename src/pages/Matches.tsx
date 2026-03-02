@@ -5,6 +5,7 @@ import { useUserTier } from "@/contexts/UserTierContext";
 import ProGate from "@/components/ProGate";
 import OddsMovementChart from "@/components/dashboard/OddsMovementChart";
 import AIInsight from "@/components/dashboard/AIInsight";
+import MatchQuickActions from "@/components/MatchQuickActions";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -27,7 +28,7 @@ const Matches = () => {
               const isLocked = !isPro && i > 0;
 
               const card = (
-                <div key={match.id} className="gradient-card rounded-xl border border-border p-6">
+                <div key={match.id} className="gradient-card rounded-xl border border-border p-6 group relative">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{match.flagA}</span>
@@ -47,6 +48,7 @@ const Matches = () => {
                         <SignalIcon className="w-3 h-3" />
                         {match.signal.toUpperCase()}
                       </div>
+                      <MatchQuickActions matchId={match.id} teamA={match.teamA} teamB={match.teamB} />
                     </div>
                   </div>
 

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { leagues } from "@/lib/leagueData";
 import { getAllMatches, getTopEdges, getLeagueIdFromName, filterByLeague } from "@/lib/multiLeagueData";
 import { useLeague } from "@/contexts/LeagueContext";
+import MatchQuickActions from "@/components/MatchQuickActions";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
@@ -249,7 +250,7 @@ const Index = () => {
           </div>
           <div className="space-y-2">
             {topEdges.map(m => (
-              <div key={m.id} className="gradient-card rounded-lg border border-border p-3 flex items-center gap-3 hover:border-primary/30 transition-all">
+              <div key={m.id} className="gradient-card rounded-lg border border-border p-3 flex items-center gap-3 hover:border-primary/30 transition-all group relative">
                 <Badge variant="outline" className="text-[9px] font-mono shrink-0 min-w-[70px] justify-center">{m.league}</Badge>
                 <div className="flex items-center gap-1.5 flex-1 min-w-0 text-sm text-foreground font-semibold">
                   <span>{m.flagHome}</span>
@@ -262,6 +263,7 @@ const Index = () => {
                   +{m.edge.toFixed(1)}% Edge
                 </Badge>
                 <span className="text-[10px] text-muted-foreground font-mono shrink-0">{m.kickoffLocal}</span>
+                <MatchQuickActions matchId={m.linkedMatchId ?? m.id} teamA={m.teamHome} teamB={m.teamAway} />
               </div>
             ))}
           </div>

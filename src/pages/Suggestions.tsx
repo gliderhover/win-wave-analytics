@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { mockMatches } from "@/lib/mockData";
 import { generateSuggestions, Suggestion } from "@/lib/suggestions";
 import Navbar from "@/components/Navbar";
+import MatchQuickActions from "@/components/MatchQuickActions";
 import ProGate from "@/components/ProGate";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -105,10 +106,11 @@ const Suggestions = () => {
         ) : (
           <div className="space-y-4">
             {filtered.map(({ match, suggestion: s }) => (
-              <div key={s.id} className="gradient-card rounded-xl border border-border p-5">
+              <div key={s.id} className="gradient-card rounded-xl border border-border p-5 group relative">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 font-mono">
                   <span>{match.flagA}</span> {match.teamA} vs {match.teamB} <span>{match.flagB}</span>
                   <span className="ml-auto">{match.kickoff}</span>
+                  <MatchQuickActions matchId={match.id} teamA={match.teamA} teamB={match.teamB} />
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="shrink-0">{typeIcons[s.type]}</div>
