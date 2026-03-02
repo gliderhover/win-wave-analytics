@@ -285,44 +285,96 @@ const FilterSelect = ({ label, value, onChange, options }: { label: string; valu
   </div>
 );
 
+const INTERNATIONAL_LEAGUES = ["wc"];
+
 const RadarAnalyticsTab = () => {
   const [entityType, setEntityType] = useState<EntityType>("team");
   const [compare, setCompare] = useState(false);
   const [entityAId, setEntityAId] = useState("t1");
   const [entityBId, setEntityBId] = useState("t2");
+  // New filter hierarchy: Competition → Country → Team → Position → Entity
+  const [competitionFilter, setCompetitionFilter] = useState("all");
   const [countryFilter, setCountryFilter] = useState("all");
-  const [leagueFilter, setLeagueFilter] = useState("all");
+  const [teamFilter, setTeamFilter] = useState("all");
   const [positionFilter, setPositionFilter] = useState("all");
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [infoPanelOpen, setInfoPanelOpen] = useState(true);
   const isMobile = useIsMobile();
 
-  // Derive filter options
-  const allCountries = useMemo(() => {
+  const isInternational = INTERNATIONAL_LEAGUES.includes(competitionFilter);
+  // For club leagues, country is "more filters"; for international, it's primary
+  const countryIsPrimary = competitionFilter === "all" || isInternational;
+
+  // Competition options
+  const competitionOptions = useMemo(() => [
+    { value: "all", label: "All Competitions" },
+    ...leagues.map(l => ({ value: l.id, label: `${l.logo} ${l.shortName}` })),
+  ], []);
+
+  // Countries derived from entities in the selected competition
+  const availableCountries = useMemo(() => {
     const set = new Set<string>();
-    eliteTeams.forEach(t => set.add(t.country));
-    elitePlayers.forEach(p => set.add(p.country));
-    eliteCoaches.forEach(c => set.add(c.country));
+    const addFrom = (items: { country: string; league_id: string }[]) => {
+      items.forEach(i => {
+        if (competitionFilter === "all" || i.league_id === competitionFilter) set.add(i.country);
+      });
+    };
+    addFrom(eliteTeams);
+    addFrom(elitePlayers);
+    addFrom(eliteCoaches.map(c => ({ country: c.country, league_id: c.league_id })));
     return Array.from(set).sort();
-  }, []);
+  }, [competitionFilter]);
 
-  const allLeagues = useMemo(() => leagues.map(l => ({ value: l.id, label: `${l.logo} ${l.shortName}` })), []);
+  // Teams available given competition + country
+  const availableTeams = useMemo(() => {
+    const set = new Map<string, string>(); // name → flag
+    let teams = [...eliteTeams];
+    if (competitionFilter !== "all") teams = teams.filter(t => t.league_id === competitionFilter);
+    if (countryFilter !== "all") teams = teams.filter(t => t.country === countryFilter);
+    teams.forEach(t => set.set(t.name, t.flag));
+    // Also add clubs from players/coaches
+    let players = [...elitePlayers];
+    if (competitionFilter !== "all") players = players.filter(p => p.league_id === competitionFilter);
+    if (countryFilter !== "all") players = players.filter(p => p.country === countryFilter);
+    players.forEach(p => { if (!set.has(p.club)) set.set(p.club, p.flag); });
+    let coaches = [...eliteCoaches];
+    if (competitionFilter !== "all") coaches = coaches.filter(c => c.league_id === competitionFilter);
+    if (countryFilter !== "all") coaches = coaches.filter(c => c.country === countryFilter);
+    coaches.forEach(c => { if (!set.has(c.team)) set.set(c.team, c.flag); });
+    return Array.from(set.entries()).map(([name, flag]) => ({ value: name, label: `${flag} ${name}` })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [competitionFilter, countryFilter]);
 
+  // Filtered entity list
   const filteredEntities = useMemo(() => {
-    let items: { id: string; name: string; flag: string; sub: string; league: string; leagueId: string; country: string; position?: string }[] = [];
+    let items: { id: string; name: string; flag: string; sub: string; league: string; leagueId: string; country: string; team: string; position?: string }[] = [];
     if (entityType === "team") {
-      items = eliteTeams.map(t => ({ id: t.id, name: `${t.name} (National Team)`, flag: t.flag, sub: t.country, league: t.league_name, leagueId: t.league_id, country: t.country }));
+      items = eliteTeams.map(t => {
+        const label = isInternational || competitionFilter === "all"
+          ? `${t.name} (National Team)`
+          : `${t.name} (${t.country} • ${t.league_name})`;
+        return { id: t.id, name: label, flag: t.flag, sub: t.country, league: t.league_name, leagueId: t.league_id, country: t.country, team: t.name };
+      });
     } else if (entityType === "player") {
-      items = elitePlayers.map(p => ({ id: p.id, name: p.name, flag: p.flag, sub: `${p.position} • ${p.club} • ${p.country}`, league: p.league_name, leagueId: p.league_id, country: p.country, position: p.position }));
+      items = elitePlayers.map(p => ({
+        id: p.id, name: p.name, flag: p.flag,
+        sub: `${p.position} • ${p.club} • ${p.country}`,
+        league: p.league_name, leagueId: p.league_id, country: p.country, team: p.club, position: p.position,
+      }));
     } else {
-      items = eliteCoaches.map(c => ({ id: c.id, name: c.name, flag: c.flag, sub: `${c.team} • ${c.country} • ${c.league_name}`, league: c.league_name, leagueId: c.league_id, country: c.country }));
+      items = eliteCoaches.map(c => ({
+        id: c.id, name: c.name, flag: c.flag,
+        sub: `${c.team} • ${c.country} • ${c.league_name}`,
+        league: c.league_name, leagueId: c.league_id, country: c.country, team: c.team,
+      }));
     }
+    if (competitionFilter !== "all") items = items.filter(e => e.leagueId === competitionFilter);
     if (countryFilter !== "all") items = items.filter(e => e.country === countryFilter);
-    if (leagueFilter !== "all") items = items.filter(e => e.leagueId === leagueFilter);
+    if (teamFilter !== "all") items = items.filter(e => e.team === teamFilter);
     if (positionFilter !== "all" && entityType === "player") {
       items = items.filter(e => e.position && e.position.includes(positionFilter));
     }
     return items;
-  }, [entityType, countryFilter, leagueFilter, positionFilter]);
+  }, [entityType, competitionFilter, countryFilter, teamFilter, positionFilter, isInternational]);
 
   const axes = getRadarAxes(entityType);
   const entityA = getEntity(entityType, entityAId);
@@ -334,11 +386,35 @@ const RadarAnalyticsTab = () => {
     ...(entityB ? { B: (entityB as any).radar_scores[axis] ?? 0 } : {}),
   }));
 
+  // Cascade reset: competition change resets downstream
+  const handleCompetitionChange = (v: string) => {
+    setCompetitionFilter(v);
+    setCountryFilter("all");
+    setTeamFilter("all");
+    setPositionFilter("all");
+    // Auto-select first matching entity
+    const ents = getEntities(entityType);
+    const filtered = v === "all" ? ents : ents.filter(e => {
+      if (entityType === "team") return eliteTeams.find(t => t.id === e.id)?.league_id === v;
+      if (entityType === "player") return elitePlayers.find(p => p.id === e.id)?.league_id === v;
+      return eliteCoaches.find(c => c.id === e.id)?.league_id === v;
+    });
+    if (filtered[0]) setEntityAId(filtered[0].id);
+    if (filtered[1]) setEntityBId(filtered[1].id);
+  };
+
+  const handleCountryChange = (v: string) => {
+    setCountryFilter(v);
+    setTeamFilter("all");
+  };
+
   const handleTypeChange = (t: EntityType) => {
     setEntityType(t);
+    setCompetitionFilter("all");
     setCountryFilter("all");
-    setLeagueFilter("all");
+    setTeamFilter("all");
     setPositionFilter("all");
+    setShowMoreFilters(false);
     const ents = getEntities(t);
     if (ents[0]) setEntityAId(ents[0].id);
     if (ents[1]) setEntityBId(ents[1].id);
@@ -373,6 +449,9 @@ const RadarAnalyticsTab = () => {
     return <CoachInfoPanel entity={entityA as EliteCoach} />;
   };
 
+  // Determine entity label for select dropdown
+  const entitySelectLabel = entityType === "team" ? "Select Team" : entityType === "player" ? "Select Player" : "Select Coach";
+
   return (
     <div className="space-y-6">
       {/* Controls */}
@@ -392,45 +471,82 @@ const RadarAnalyticsTab = () => {
             )}>Compare {compare ? "ON" : "OFF"}</button>
         </div>
 
-        {/* Filters (Compare OFF) */}
+        {/* Filters — new hierarchy: Competition → Country → Team → Position → Entity */}
         {!compare && (
-          <div className="flex items-center gap-1.5 mb-3">
-            <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="text-[10px] font-mono text-muted-foreground uppercase">Filters</span>
-          </div>
-        )}
-        <div className={cn("grid gap-3 mb-3", !compare ? (entityType === "player" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3") : "grid-cols-1 md:grid-cols-2")}>
-          {!compare && (
-            <>
-              <FilterSelect label="Country" value={countryFilter} onChange={setCountryFilter}
-                options={[{ value: "all", label: "All Countries" }, ...allCountries.map(c => ({ value: c, label: c }))]} />
-              <FilterSelect label="Competition" value={leagueFilter} onChange={setLeagueFilter}
-                options={[{ value: "all", label: "All Competitions" }, ...allLeagues]} />
+          <>
+            <div className="flex items-center gap-1.5 mb-3">
+              <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+              <span className="text-[10px] font-mono text-muted-foreground uppercase">Filters</span>
+            </div>
+            {/* Primary row: Competition | Country (if international/all) | Team | Position (player) | Entity */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-3">
+              {/* 1. Competition */}
+              <FilterSelect label="Competition" value={competitionFilter} onChange={handleCompetitionChange}
+                options={competitionOptions} />
+              {/* 2. Country (primary when international or all) */}
+              {countryIsPrimary && (
+                <FilterSelect label="Country" value={countryFilter} onChange={handleCountryChange}
+                  options={[{ value: "all", label: "All Countries" }, ...availableCountries.map(c => ({ value: c, label: c }))]} />
+              )}
+              {/* 3. Team */}
+              <FilterSelect label="Team" value={teamFilter} onChange={setTeamFilter}
+                options={[{ value: "all", label: "All Teams" }, ...availableTeams]} />
+              {/* 4. Position (player only) */}
               {entityType === "player" && (
                 <FilterSelect label="Position" value={positionFilter} onChange={setPositionFilter}
                   options={[{ value: "all", label: "All Positions" }, { value: "GK", label: "GK" }, { value: "CB", label: "DF" }, { value: "M", label: "MF" }, { value: "W", label: "FW" }]} />
               )}
-            </>
-          )}
-          <div className={!compare ? "" : ""}>
-            <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">
-              {compare ? "Entity A" : `Select ${entityType}`}
-            </label>
-            <select value={entityAId} onChange={e => setEntityAId(e.target.value)}
-              className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
-              {filteredEntities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name} ({e.league})</option>)}
-            </select>
-          </div>
-          {compare && (
-            <div>
-              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Entity B</label>
+              {/* 5. Entity selector */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-muted-foreground font-mono uppercase">{entitySelectLabel}</label>
+                <select value={entityAId} onChange={e => setEntityAId(e.target.value)}
+                  className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
+                  {filteredEntities.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.flag} {e.name} • {e.sub}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {/* More filters toggle — shows country for club leagues */}
+            {!countryIsPrimary && (
+              <div className="mb-3">
+                <button onClick={() => setShowMoreFilters(!showMoreFilters)}
+                  className="text-[10px] font-mono text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                  {showMoreFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  {showMoreFilters ? "Hide filters" : "More filters"}
+                </button>
+                {showMoreFilters && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                    <FilterSelect label="Nationality" value={countryFilter} onChange={handleCountryChange}
+                      options={[{ value: "all", label: "All Countries" }, ...availableCountries.map(c => ({ value: c, label: c }))]} />
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Compare mode selectors */}
+        {compare && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground font-mono uppercase">Entity A</label>
+              <select value={entityAId} onChange={e => setEntityAId(e.target.value)}
+                className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
+                {filteredEntities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name} ({e.league})</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-muted-foreground font-mono uppercase">Entity B</label>
               <select value={entityBId} onChange={e => setEntityBId(e.target.value)}
                 className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
                 {filteredEntities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name} ({e.league})</option>)}
               </select>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Radar + Info Panel layout */}
