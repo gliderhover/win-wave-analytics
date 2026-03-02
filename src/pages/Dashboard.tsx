@@ -18,6 +18,7 @@ import GameSchedulePanel from "@/components/dashboard/GameSchedulePanel";
 import EliteDDSnapshot from "@/components/dashboard/EliteDDSnapshot";
 import TopEdgeRibbon from "@/components/TopEdgeRibbon";
 import Navbar from "@/components/Navbar";
+import MatchQuickActions from "@/components/MatchQuickActions";
 import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
@@ -80,7 +81,7 @@ const Dashboard = () => {
           </div>
 
           {/* Match Header */}
-          <div className="gradient-card rounded-xl border border-border p-6 mb-6">
+          <div className="gradient-card rounded-xl border border-border p-6 mb-6 group relative">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 <span className="text-3xl">{selectedMatch.flagA}</span>
@@ -105,6 +106,7 @@ const Dashboard = () => {
                 >
                   Match Lab →
                 </button>
+                <MatchQuickActions matchId={selectedMatch.id} teamA={selectedMatch.teamA} teamB={selectedMatch.teamB} />
               </div>
             </div>
 
