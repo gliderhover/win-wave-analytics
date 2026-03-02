@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import { useUserTier } from "@/contexts/UserTierContext";
 import ProGate from "@/components/ProGate";
 import { cn } from "@/lib/utils";
-import { Crown, Search, AlertTriangle, ChevronDown, ChevronUp, Users, User, Briefcase } from "lucide-react";
+import { Crown, Search, AlertTriangle, ChevronDown, ChevronUp, Users, User, Briefcase, Filter } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,8 +12,11 @@ import {
   ddReportSections, riskFlags, mockSources,
   type EliteTeam, type ElitePlayer, type EliteCoach,
 } from "@/lib/eliteData";
+import { leagues } from "@/lib/leagueData";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend, ResponsiveContainer } from "recharts";
 import { useSearchParams } from "react-router-dom";
+import { TeamInfoPanel, PlayerInfoPanel, CoachInfoPanel, CompareSummary } from "@/components/elite/EliteInfoPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Helpers ────────────────────────────────────────────────────
 type EntityType = "team" | "player" | "coach";
@@ -272,13 +275,55 @@ const DueDiligenceTab = () => (
 );
 
 // ─── Radar Analytics Tab ────────────────────────────────────────
+const FilterSelect = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) => (
+  <div className="space-y-1">
+    <label className="text-[10px] text-muted-foreground font-mono uppercase">{label}</label>
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  </div>
+);
+
 const RadarAnalyticsTab = () => {
   const [entityType, setEntityType] = useState<EntityType>("team");
   const [compare, setCompare] = useState(false);
   const [entityAId, setEntityAId] = useState("t1");
   const [entityBId, setEntityBId] = useState("t2");
+  const [countryFilter, setCountryFilter] = useState("all");
+  const [leagueFilter, setLeagueFilter] = useState("all");
+  const [positionFilter, setPositionFilter] = useState("all");
+  const [infoPanelOpen, setInfoPanelOpen] = useState(true);
+  const isMobile = useIsMobile();
 
-  const entities = getEntities(entityType);
+  // Derive filter options
+  const allCountries = useMemo(() => {
+    const set = new Set<string>();
+    eliteTeams.forEach(t => set.add(t.country));
+    elitePlayers.forEach(p => set.add(p.country));
+    eliteCoaches.forEach(c => set.add(c.country));
+    return Array.from(set).sort();
+  }, []);
+
+  const allLeagues = useMemo(() => leagues.map(l => ({ value: l.id, label: `${l.logo} ${l.shortName}` })), []);
+
+  const filteredEntities = useMemo(() => {
+    let items: { id: string; name: string; flag: string; sub: string; league: string; leagueId: string; country: string; position?: string }[] = [];
+    if (entityType === "team") {
+      items = eliteTeams.map(t => ({ id: t.id, name: `${t.name} (National Team)`, flag: t.flag, sub: t.country, league: t.league_name, leagueId: t.league_id, country: t.country }));
+    } else if (entityType === "player") {
+      items = elitePlayers.map(p => ({ id: p.id, name: p.name, flag: p.flag, sub: `${p.position} • ${p.club} • ${p.country}`, league: p.league_name, leagueId: p.league_id, country: p.country, position: p.position }));
+    } else {
+      items = eliteCoaches.map(c => ({ id: c.id, name: c.name, flag: c.flag, sub: `${c.team} • ${c.country} • ${c.league_name}`, league: c.league_name, leagueId: c.league_id, country: c.country }));
+    }
+    if (countryFilter !== "all") items = items.filter(e => e.country === countryFilter);
+    if (leagueFilter !== "all") items = items.filter(e => e.leagueId === leagueFilter);
+    if (positionFilter !== "all" && entityType === "player") {
+      items = items.filter(e => e.position && e.position.includes(positionFilter));
+    }
+    return items;
+  }, [entityType, countryFilter, leagueFilter, positionFilter]);
+
   const axes = getRadarAxes(entityType);
   const entityA = getEntity(entityType, entityAId);
   const entityB = compare ? getEntity(entityType, entityBId) : null;
@@ -291,12 +336,14 @@ const RadarAnalyticsTab = () => {
 
   const handleTypeChange = (t: EntityType) => {
     setEntityType(t);
+    setCountryFilter("all");
+    setLeagueFilter("all");
+    setPositionFilter("all");
     const ents = getEntities(t);
     if (ents[0]) setEntityAId(ents[0].id);
     if (ents[1]) setEntityBId(ents[1].id);
   };
 
-  // Takeaways
   const takeaways = useMemo(() => {
     if (!entityA) return [];
     const scores = (entityA as any).radar_scores as Record<string, number>;
@@ -314,6 +361,17 @@ const RadarAnalyticsTab = () => {
     }
     return bullets;
   }, [entityA, entityB]);
+
+  // Info panel content
+  const renderInfoPanel = () => {
+    if (compare && entityA && entityB) {
+      return <CompareSummary entityA={entityA} entityB={entityB} axes={axes} />;
+    }
+    if (!entityA) return null;
+    if (entityType === "team") return <TeamInfoPanel entity={entityA as EliteTeam} />;
+    if (entityType === "player") return <PlayerInfoPanel entity={entityA as ElitePlayer} />;
+    return <CoachInfoPanel entity={entityA as EliteCoach} />;
+  };
 
   return (
     <div className="space-y-6">
@@ -334,72 +392,112 @@ const RadarAnalyticsTab = () => {
             )}>Compare {compare ? "ON" : "OFF"}</button>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <select value={entityAId} onChange={e => setEntityAId(e.target.value)}
-            className="bg-secondary border border-border rounded-lg px-3 py-1.5 text-sm text-foreground">
-            {entities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name}</option>)}
-          </select>
-          {compare && (
+        {/* Filters (Compare OFF) */}
+        {!compare && (
+          <div className="flex items-center gap-1.5 mb-3">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-[10px] font-mono text-muted-foreground uppercase">Filters</span>
+          </div>
+        )}
+        <div className={cn("grid gap-3 mb-3", !compare ? (entityType === "player" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-2 md:grid-cols-3") : "grid-cols-1 md:grid-cols-2")}>
+          {!compare && (
             <>
-              <span className="text-muted-foreground text-sm self-center">vs</span>
-              <select value={entityBId} onChange={e => setEntityBId(e.target.value)}
-                className="bg-secondary border border-border rounded-lg px-3 py-1.5 text-sm text-foreground">
-                {entities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name}</option>)}
-              </select>
+              <FilterSelect label="Country" value={countryFilter} onChange={setCountryFilter}
+                options={[{ value: "all", label: "All Countries" }, ...allCountries.map(c => ({ value: c, label: c }))]} />
+              <FilterSelect label="Competition" value={leagueFilter} onChange={setLeagueFilter}
+                options={[{ value: "all", label: "All Competitions" }, ...allLeagues]} />
+              {entityType === "player" && (
+                <FilterSelect label="Position" value={positionFilter} onChange={setPositionFilter}
+                  options={[{ value: "all", label: "All Positions" }, { value: "GK", label: "GK" }, { value: "CB", label: "DF" }, { value: "M", label: "MF" }, { value: "W", label: "FW" }]} />
+              )}
             </>
+          )}
+          <div className={!compare ? "" : ""}>
+            <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">
+              {compare ? "Entity A" : `Select ${entityType}`}
+            </label>
+            <select value={entityAId} onChange={e => setEntityAId(e.target.value)}
+              className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
+              {filteredEntities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name} ({e.league})</option>)}
+            </select>
+          </div>
+          {compare && (
+            <div>
+              <label className="text-[10px] text-muted-foreground font-mono uppercase block mb-1">Entity B</label>
+              <select value={entityBId} onChange={e => setEntityBId(e.target.value)}
+                className="w-full bg-secondary border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground">
+                {filteredEntities.map(e => <option key={e.id} value={e.id}>{e.flag} {e.name} ({e.league})</option>)}
+              </select>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Radar Chart */}
-      <div className="gradient-card rounded-xl border border-primary/20 p-5 shadow-[0_0_25px_hsl(175_85%_50%/0.08)]">
-        <div className="flex items-center gap-2 mb-4">
-          <Crown className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Octagon Radar</h3>
-          <EliteBadge />
-        </div>
-        <div className="w-full h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="hsl(222 30% 20%)" />
-              <PolarAngleAxis dataKey="axis" tick={{ fill: "hsl(215 20% 55%)", fontSize: 10 }} />
-              <PolarRadiusAxis domain={[0, 100]} tick={{ fill: "hsl(215 20% 45%)", fontSize: 9 }} />
-              <Radar name={entityA ? (entityA as any).name : "A"} dataKey="A" stroke="hsl(175 85% 50%)" fill="hsl(175 85% 50%)" fillOpacity={0.2} strokeWidth={2} />
-              {compare && entityB && (
-                <Radar name={(entityB as any).name} dataKey="B" stroke="hsl(145 70% 50%)" fill="hsl(145 70% 50%)" fillOpacity={0.15} strokeWidth={2} />
-              )}
-              <Legend wrapperStyle={{ fontSize: 11, color: "hsl(210 40% 93%)" }} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Score Breakdown */}
-        <div className="mt-4 border-t border-border pt-4">
-          <h4 className="text-xs font-semibold text-muted-foreground mb-2">Score Breakdown</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {radarData.map(d => (
-              <div key={d.axis} className="bg-secondary/50 rounded-lg p-2">
-                <div className="text-[10px] text-muted-foreground">{d.axis}</div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-primary">{d.A}</span>
-                  {compare && d.B !== undefined && <span className="font-mono text-sm font-bold text-accent">{d.B}</span>}
-                </div>
-              </div>
-            ))}
+      {/* Radar + Info Panel layout */}
+      <div className={cn("grid gap-6", isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-5")}>
+        {/* Radar Chart — takes 3/5 on desktop */}
+        <div className={cn("gradient-card rounded-xl border border-primary/20 p-5 shadow-[0_0_25px_hsl(175_85%_50%/0.08)]", !isMobile && "lg:col-span-3")}>
+          <div className="flex items-center gap-2 mb-4">
+            <Crown className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">Octagon Radar</h3>
+            <EliteBadge />
           </div>
-        </div>
+          <div className="w-full h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="hsl(222 30% 20%)" />
+                <PolarAngleAxis dataKey="axis" tick={{ fill: "hsl(215 20% 55%)", fontSize: 10 }} />
+                <PolarRadiusAxis domain={[0, 100]} tick={{ fill: "hsl(215 20% 45%)", fontSize: 9 }} />
+                <Radar name={entityA ? (entityA as any).name : "A"} dataKey="A" stroke="hsl(175 85% 50%)" fill="hsl(175 85% 50%)" fillOpacity={0.2} strokeWidth={2} />
+                {compare && entityB && (
+                  <Radar name={(entityB as any).name} dataKey="B" stroke="hsl(145 70% 50%)" fill="hsl(145 70% 50%)" fillOpacity={0.15} strokeWidth={2} />
+                )}
+                <Legend wrapperStyle={{ fontSize: 11, color: "hsl(210 40% 93%)" }} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
 
-        {/* Key Takeaways */}
-        {takeaways.length > 0 && (
+          {/* Score Breakdown */}
           <div className="mt-4 border-t border-border pt-4">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-2">Key Takeaways</h4>
-            <ul className="space-y-1">
-              {takeaways.map((t, i) => (
-                <li key={i} className="text-xs text-secondary-foreground">• {t}</li>
+            <h4 className="text-xs font-semibold text-muted-foreground mb-2">Score Breakdown</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {radarData.map(d => (
+                <div key={d.axis} className="bg-secondary/50 rounded-lg p-2">
+                  <div className="text-[10px] text-muted-foreground">{d.axis}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-primary">{d.A}</span>
+                    {compare && d.B !== undefined && <span className="font-mono text-sm font-bold text-accent">{d.B}</span>}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
-        )}
+
+          {/* Key Takeaways */}
+          {takeaways.length > 0 && (
+            <div className="mt-4 border-t border-border pt-4">
+              <h4 className="text-xs font-semibold text-muted-foreground mb-2">Key Takeaways</h4>
+              <ul className="space-y-1">
+                {takeaways.map((t, i) => (
+                  <li key={i} className="text-xs text-secondary-foreground">• {t}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Info Panel — takes 2/5 on desktop */}
+        <div className={cn("gradient-card rounded-xl border border-border p-5 overflow-y-auto", !isMobile && "lg:col-span-2 max-h-[700px]")}>
+          {isMobile && (
+            <button onClick={() => setInfoPanelOpen(!infoPanelOpen)} className="flex items-center justify-between w-full mb-2">
+              <span className="text-sm font-semibold text-foreground">
+                {compare ? "Compare Summary" : `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} Profile`}
+              </span>
+              {infoPanelOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+            </button>
+          )}
+          {(!isMobile || infoPanelOpen) && renderInfoPanel()}
+        </div>
       </div>
     </div>
   );
