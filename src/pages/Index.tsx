@@ -1,32 +1,47 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Activity, Brain, BarChart3, Zap, Shield, LineChart, ArrowRight, Trophy, ChevronRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import FeatureCard from "@/components/FeatureCard";
 import { Badge } from "@/components/ui/badge";
 import { leagues } from "@/lib/leagueData";
-import { getAllMatches, getTopEdges, getLeagueIdFromName } from "@/lib/multiLeagueData";
+import { getAllMatches, getTopEdges, getLeagueIdFromName, filterByLeague } from "@/lib/multiLeagueData";
 import { useLeague } from "@/contexts/LeagueContext";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
   const navigate = useNavigate();
   const { setSelectedLeague } = useLeague();
+  const [activeLeague, setActiveLeague] = useState("wc");
 
   const allMatches = useMemo(() => getAllMatches(), []);
 
-  // Next 5 World Cup upcoming matches
-  const wcUpcoming = useMemo(() =>
-    allMatches
-      .filter(m => m.status === "UPCOMING" && getLeagueIdFromName(m.league) === "wc")
+  // Filtered upcoming matches based on selected league chip
+  const activeLeagueObj = leagues.find(l => l.id === activeLeague);
+  const activeLeagueLabel = activeLeagueObj?.shortName ?? "World Cup";
+  const activeLeagueLogo = activeLeagueObj?.logo ?? "🏆";
+
+  const filteredUpcoming = useMemo(() =>
+    filterByLeague(allMatches, activeLeague)
+      .filter(m => m.status === "UPCOMING")
       .slice(0, 5),
-  [allMatches]);
+  [allMatches, activeLeague]);
+
+  const filteredLive = useMemo(() =>
+    filterByLeague(allMatches, activeLeague)
+      .filter(m => m.status === "LIVE")
+      .slice(0, 3),
+  [allMatches, activeLeague]);
 
   // Top 6 edges across all leagues
   const topEdges = useMemo(() => getTopEdges(allMatches, 6), [allMatches]);
 
-  const handleLeagueClick = (leagueId: string) => {
-    setSelectedLeague(leagueId);
+  const handleLeagueChipClick = (leagueId: string) => {
+    setActiveLeague(leagueId);
+  };
+
+  const handleViewSchedule = () => {
+    setSelectedLeague(activeLeague);
     navigate("/dashboard");
   };
 
@@ -46,7 +61,7 @@ const Index = () => {
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-foreground mb-6 animate-slide-up-delay-1 leading-tight">
             World Cup Upcoming<br />
-            <span className="text-glow text-primary">Intelligence</span>
+            <span className="text-glow text-primary">Bet Intelligence</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-slide-up-delay-2">
             Track upcoming World Cup matches, odds movement, and top edges. 
@@ -87,92 +102,131 @@ const Index = () => {
         </div>
       </section>
 
-      {/* World Cup Featured Module */}
+      {/* League Selector Chips + Featured Matches */}
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-4xl">
-          <div className="gradient-card rounded-xl border border-primary/20 p-6 card-glow">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-primary" />
-                <h3 className="text-lg font-bold text-foreground">World Cup Upcoming Matches</h3>
-              </div>
-              <Link
-                to="/dashboard"
-                onClick={() => setSelectedLeague("wc")}
-                className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
-              >
-                See full schedule <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-
-            {wcUpcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No upcoming World Cup matches found.</p>
-            ) : (
-              <div className="space-y-2">
-                {wcUpcoming.map(m => (
-                  <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                        <span>{m.flagHome}</span>
-                        <span className="truncate">{m.teamHome}</span>
-                        <span className="text-muted-foreground text-xs">vs</span>
-                        <span className="truncate">{m.teamAway}</span>
-                        <span>{m.flagAway}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
-                        <span>{m.kickoffDate}</span>
-                        <span>•</span>
-                        <span>{m.kickoffLocal}</span>
-                        <Badge variant="outline" className="text-[9px] ml-1">{m.league}</Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {m.edge >= 4 && (
-                        <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
-                          +{m.edge.toFixed(1)}%
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className={cn("text-[9px]",
-                        m.confidence === "High" ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" :
-                        m.confidence === "Medium" ? "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30" :
-                        "bg-signal-bearish/15 text-signal-bearish border-signal-bearish/30"
-                      )}>
-                        {m.confidence}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* All Leagues Discovery */}
-      <section className="py-12 px-4 border-t border-border">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-6">
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Coverage</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-2">All Leagues</h2>
-            <p className="text-muted-foreground text-sm mt-1">Full multi-league intelligence across the world's top competitions</p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
+          {/* League chips — selectable on homepage */}
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
             {leagues.map(l => (
               <button
                 key={l.id}
-                onClick={() => handleLeagueClick(l.id)}
-                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border border-border bg-secondary/30 text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all"
+                onClick={() => handleLeagueChipClick(l.id)}
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
+                  activeLeague === l.id
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                )}
               >
                 <span>{l.logo}</span>
                 {l.shortName}
               </button>
             ))}
-            <button
-              onClick={() => handleLeagueClick("all")}
-              className="text-sm font-mono px-4 py-2 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-all"
-            >
-              More →
-            </button>
+          </div>
+
+          {/* Featured matches card — updates per league */}
+          <div className="gradient-card rounded-xl border border-primary/20 p-6 card-glow">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{activeLeagueLogo}</span>
+                <h3 className="text-lg font-bold text-foreground">{activeLeagueLabel} Matches</h3>
+              </div>
+              <button
+                onClick={handleViewSchedule}
+                className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
+              >
+                See full schedule <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Live matches for this league */}
+            {filteredLive.length > 0 && (
+              <div className="mb-4">
+                <div className="text-[10px] font-mono text-signal-bearish uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-signal-bearish animate-pulse" />
+                  Live Now
+                </div>
+                <div className="space-y-2">
+                  {filteredLive.map(m => (
+                    <div key={m.id} className="flex items-center gap-3 rounded-lg border border-signal-bearish/20 bg-signal-bearish/5 p-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                          <span>{m.flagHome}</span>
+                          <span className="truncate">{m.teamHome}</span>
+                          <span className="font-mono text-foreground mx-1">{m.scoreHome}–{m.scoreAway}</span>
+                          <span className="truncate">{m.teamAway}</span>
+                          <span>{m.flagAway}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                          <Badge variant="outline" className="text-[8px] h-4 px-1 bg-signal-bearish/10 text-signal-bearish border-signal-bearish/30">{m.minute}'</Badge>
+                          <span>{m.league}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {m.edge >= 4 && (
+                          <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
+                            +{m.edge.toFixed(1)}%
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className={cn("text-[9px]",
+                          m.confidence === "High" ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" :
+                          m.confidence === "Medium" ? "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30" :
+                          "bg-signal-bearish/15 text-signal-bearish border-signal-bearish/30"
+                        )}>
+                          {m.confidence}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming */}
+            {filteredUpcoming.length === 0 && filteredLive.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">No matches found for {activeLeagueLabel}.</p>
+            ) : filteredUpcoming.length > 0 ? (
+              <>
+                {filteredLive.length > 0 && (
+                  <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-2">Upcoming</div>
+                )}
+                <div className="space-y-2">
+                  {filteredUpcoming.map(m => (
+                    <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                          <span>{m.flagHome}</span>
+                          <span className="truncate">{m.teamHome}</span>
+                          <span className="text-muted-foreground text-xs">vs</span>
+                          <span className="truncate">{m.teamAway}</span>
+                          <span>{m.flagAway}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                          <span>{m.kickoffDate}</span>
+                          <span>•</span>
+                          <span>{m.kickoffLocal}</span>
+                          <Badge variant="outline" className="text-[9px] ml-1">{m.league}</Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {m.edge >= 4 && (
+                          <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
+                            +{m.edge.toFixed(1)}%
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className={cn("text-[9px]",
+                          m.confidence === "High" ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" :
+                          m.confidence === "Medium" ? "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30" :
+                          "bg-signal-bearish/15 text-signal-bearish border-signal-bearish/30"
+                        )}>
+                          {m.confidence}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       </section>
