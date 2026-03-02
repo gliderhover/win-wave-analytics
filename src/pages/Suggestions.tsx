@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useUserTier } from "@/contexts/UserTierContext";
+import { useI18n } from "@/i18n/I18nContext";
 import { cn } from "@/lib/utils";
 import { Zap, TrendingUp, Shield, Eye, Bell, Filter } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +34,7 @@ const riskColors: Record<string, string> = {
 
 const Suggestions = () => {
   const { isPro } = useUserTier();
+  const { t } = useI18n();
   const [edgeThreshold, setEdgeThreshold] = useState(4);
   const [confFilter, setConfFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("edge");
@@ -61,37 +63,37 @@ const Suggestions = () => {
   const content = (
     <div className="pt-8 pb-20 px-4">
       <div className="container mx-auto">
-        <h1 className="text-2xl font-bold text-foreground mb-2">Suggested Bets</h1>
-        <p className="text-sm text-muted-foreground mb-6">Actionable picks across all matches based on edge + movement</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t("suggestions.title")}</h1>
+        <p className="text-sm text-muted-foreground mb-6">{t("suggestions.subtitle")}</p>
 
         <div className="gradient-card rounded-xl border border-border p-4 mb-6">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-            <Filter className="w-3.5 h-3.5" /> Filters
+            <Filter className="w-3.5 h-3.5" /> {t("common.filters")}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Min Edge: {edgeThreshold}%</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("suggestions.minEdge", { value: String(edgeThreshold) })}</label>
               <Slider value={[edgeThreshold]} onValueChange={([v]) => setEdgeThreshold(v)} min={4} max={12} step={0.5} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Confidence</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("common.confidence")}</label>
               <Select value={confFilter} onValueChange={setConfFilter}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="all">{t("common.all")}</SelectItem>
+                  <SelectItem value="High">{t("common.high")}</SelectItem>
+                  <SelectItem value="Medium">{t("common.medium")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Sort by</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("common.sortBy")}</label>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="edge">Highest Edge</SelectItem>
-                  <SelectItem value="soonest">Soonest Match</SelectItem>
-                  <SelectItem value="movement">Most Movement</SelectItem>
+                  <SelectItem value="edge">{t("suggestions.highestEdge")}</SelectItem>
+                  <SelectItem value="soonest">{t("suggestions.soonestMatch")}</SelectItem>
+                  <SelectItem value="movement">{t("suggestions.mostMovement")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -100,15 +102,15 @@ const Suggestions = () => {
 
         {filtered.length === 0 ? (
           <div className="gradient-card rounded-xl border border-border p-10 text-center">
-            <p className="text-sm text-muted-foreground mb-1">No suggestions match your filters.</p>
-            <p className="text-xs text-muted-foreground">Try lowering the edge threshold.</p>
+            <p className="text-sm text-muted-foreground mb-1">{t("suggestions.noSuggestions")}</p>
+            <p className="text-xs text-muted-foreground">{t("suggestions.lowerThreshold")}</p>
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map(({ match, suggestion: s }) => (
               <div key={s.id} className="gradient-card rounded-xl border border-border p-5 group relative">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 font-mono">
-                  <span>{match.flagA}</span> {match.teamA} vs {match.teamB} <span>{match.flagB}</span>
+                  <span>{match.flagA}</span> {match.teamA} {t("common.vs")} {match.teamB} <span>{match.flagB}</span>
                   <span className="ml-auto">{match.kickoff}</span>
                   <MatchQuickActions matchId={match.id} teamA={match.teamA} teamB={match.teamB} />
                 </div>
@@ -120,34 +122,34 @@ const Suggestions = () => {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                     <Badge variant="outline" className={cn("text-[10px] font-mono", s.edge >= 5 ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" : "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30")}>
-                      Edge +{s.edge.toFixed(1)}%
+                      {t("common.edge")} +{s.edge.toFixed(1)}%
                     </Badge>
                     <Badge variant="outline" className={cn("text-[10px]", confColors[s.confidence])}>
-                      {s.confidence}
+                      {t(`common.${s.confidence.toLowerCase()}` as any)}
                     </Badge>
                     <Badge variant="outline" className={cn("text-[10px]", riskColors[s.risk])}>
-                      Risk: {s.risk}
+                      {t("common.risk")}: {t(`common.${s.risk.toLowerCase()}` as any)}
                     </Badge>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 mt-3">
-                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => toast.success(`${s.name} added to watchlist`)}>
-                    <Eye className="w-3 h-3 mr-1" /> Watch
+                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => toast.success(t("suggestions.watchlistAdded", { name: s.name }))}>
+                    <Eye className="w-3 h-3 mr-1" /> {t("suggestions.watch")}
                   </Button>
                   {isPro && (
-                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => toast.success(`Alert set for ${s.name}`)}>
-                      <Bell className="w-3 h-3 mr-1" /> Alert
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => toast.success(t("suggestions.alertSet", { name: s.name }))}>
+                      <Bell className="w-3 h-3 mr-1" /> {t("suggestions.alert")}
                     </Button>
                   )}
                 </div>
                 <Accordion type="single" collapsible className="mt-2">
                   <AccordionItem value="why" className="border-0">
-                    <AccordionTrigger className="text-xs text-muted-foreground py-1 hover:no-underline">Why this?</AccordionTrigger>
+                    <AccordionTrigger className="text-xs text-muted-foreground py-1 hover:no-underline">{t("suggestions.whyThis")}</AccordionTrigger>
                     <AccordionContent className="text-xs text-muted-foreground pb-1">
                       <ul className="list-disc pl-4 space-y-1">
-                        <li>Model probability: <span className="font-mono text-foreground">{s.modelProb.toFixed(1)}%</span></li>
-                        <li>Market implied probability: <span className="font-mono text-foreground">{s.marketProb.toFixed(1)}%</span></li>
-                        <li>Recent movement: <span className="text-foreground">{s.recentMovement}</span></li>
+                        <li>{t("suggestions.modelProb")}: <span className="font-mono text-foreground">{s.modelProb.toFixed(1)}%</span></li>
+                        <li>{t("suggestions.marketProb")}: <span className="font-mono text-foreground">{s.marketProb.toFixed(1)}%</span></li>
+                        <li>{t("suggestions.recentMovement")}: <span className="text-foreground">{s.recentMovement}</span></li>
                       </ul>
                     </AccordionContent>
                   </AccordionItem>
@@ -164,7 +166,7 @@ const Suggestions = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="pt-16">
-        <ProGate label="Unlock Suggested Bets">{content}</ProGate>
+        <ProGate label={t("proGate.unlockSuggestions")}>{content}</ProGate>
       </div>
     </div>
   );
