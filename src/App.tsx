@@ -21,7 +21,9 @@ import SimulationCertification from "./pages/SimulationCertification";
 import MatchLab from "./pages/MatchLab";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: 1 } },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
