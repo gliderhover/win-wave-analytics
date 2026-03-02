@@ -31,6 +31,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1 } },
 });
 
+// Force HMR refresh
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
