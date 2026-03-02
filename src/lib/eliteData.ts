@@ -7,6 +7,8 @@ export interface EliteTeam {
   flag: string;
   photo_url: string;
   last_updated: string;
+  league_id: string; // e.g. "wc", "epl"
+  league_name: string;
   radar_scores: Record<string, number>;
   form_trend: string[];
   tactical_style: string;
@@ -31,6 +33,8 @@ export interface ElitePlayer {
   position: string;
   photo_url: string;
   last_updated: string;
+  league_id: string;
+  league_name: string;
   radar_scores: Record<string, number>;
   form_trend: string[];
   minutes_played: number;
@@ -48,6 +52,8 @@ export interface EliteCoach {
   team: string;
   photo_url: string;
   last_updated: string;
+  league_id: string;
+  league_name: string;
   radar_scores: Record<string, number>;
   formation_preference: string;
   substitution_tendency: string;
@@ -64,7 +70,7 @@ export const coachRadarAxes = ["Tactical Flexibility", "Game Management", "Playe
 
 export const eliteTeams: EliteTeam[] = [
   {
-    id: "t1", name: "Brazil", country: "Brazil", flag: "🇧🇷", photo_url: "", last_updated: "2026-02-25",
+    id: "t1", name: "Brazil", country: "Brazil", flag: "🇧🇷", photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { Attack: 88, Defense: 72, "Midfield Control": 85, "Set Pieces": 70, "Transition Speed": 90, "Pressing Intensity": 78, Discipline: 65, "Depth/Rotation": 82 },
     form_trend: ["W", "W", "D", "W", "L"],
     tactical_style: "High Press / Transition",
@@ -90,7 +96,7 @@ export const eliteTeams: EliteTeam[] = [
     goal_timing: "62% of goals scored in 2nd half, peak at 60-75'",
   },
   {
-    id: "t2", name: "Germany", country: "Germany", flag: "🇩🇪", photo_url: "", last_updated: "2026-02-25",
+    id: "t2", name: "Germany", country: "Germany", flag: "🇩🇪", photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { Attack: 78, Defense: 82, "Midfield Control": 88, "Set Pieces": 75, "Transition Speed": 72, "Pressing Intensity": 85, Discipline: 80, "Depth/Rotation": 78 },
     form_trend: ["W", "D", "W", "W", "W"],
     tactical_style: "Possession / High Press",
@@ -113,7 +119,7 @@ export const eliteTeams: EliteTeam[] = [
     goal_timing: "55% of goals in 1st half, strong early pressure",
   },
   {
-    id: "t3", name: "Argentina", country: "Argentina", flag: "🇦🇷", photo_url: "", last_updated: "2026-02-24",
+    id: "t3", name: "Argentina", country: "Argentina", flag: "🇦🇷", photo_url: "", last_updated: "2026-02-24", league_id: "wc", league_name: "World Cup",
     radar_scores: { Attack: 92, Defense: 70, "Midfield Control": 80, "Set Pieces": 78, "Transition Speed": 85, "Pressing Intensity": 72, Discipline: 68, "Depth/Rotation": 75 },
     form_trend: ["W", "W", "W", "D", "W"],
     tactical_style: "Counter-Attack / Individual Brilliance",
@@ -133,7 +139,7 @@ export const eliteTeams: EliteTeam[] = [
     goal_timing: "Balanced scoring: 48% 1H, 52% 2H",
   },
   {
-    id: "t4", name: "France", country: "France", flag: "🇫🇷", photo_url: "", last_updated: "2026-02-25",
+    id: "t4", name: "France", country: "France", flag: "🇫🇷", photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { Attack: 85, Defense: 80, "Midfield Control": 82, "Set Pieces": 72, "Transition Speed": 88, "Pressing Intensity": 80, Discipline: 75, "Depth/Rotation": 90 },
     form_trend: ["W", "L", "W", "W", "D"],
     tactical_style: "Flexible / Transition Speed",
@@ -160,7 +166,7 @@ export const eliteTeams: EliteTeam[] = [
 export const elitePlayers: ElitePlayer[] = [
   {
     id: "p1", name: "Vinícius Jr.", country: "Brazil", club: "Real Madrid", flag: "🇧🇷", position: "LW",
-    photo_url: "", last_updated: "2026-02-25",
+    photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { Finishing: 82, "Chance Creation": 85, Passing: 72, "Ball Carrying": 95, "Defensive Work": 40, Pace: 96, Fitness: 80, "Decision Making": 75 },
     form_trend: ["⚽", "⚽", "🅰️", "-", "⚽"],
     minutes_played: 420, fatigue: "medium",
@@ -173,7 +179,7 @@ export const elitePlayers: ElitePlayer[] = [
   },
   {
     id: "p2", name: "Jamal Musiala", country: "Germany", club: "Bayern Munich", flag: "🇩🇪", position: "AM",
-    photo_url: "", last_updated: "2026-02-25",
+    photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { Finishing: 78, "Chance Creation": 88, Passing: 85, "Ball Carrying": 90, "Defensive Work": 55, Pace: 80, Fitness: 85, "Decision Making": 82 },
     form_trend: ["⚽", "🅰️", "🅰️", "⚽", "-"],
     minutes_played: 380, fatigue: "low",
@@ -185,7 +191,7 @@ export const elitePlayers: ElitePlayer[] = [
   },
   {
     id: "p3", name: "Lionel Messi", country: "Argentina", club: "Inter Miami", flag: "🇦🇷", position: "RW/CF",
-    photo_url: "", last_updated: "2026-02-24",
+    photo_url: "", last_updated: "2026-02-24", league_id: "wc", league_name: "World Cup",
     radar_scores: { Finishing: 90, "Chance Creation": 98, Passing: 95, "Ball Carrying": 88, "Defensive Work": 25, Pace: 60, Fitness: 55, "Decision Making": 97 },
     form_trend: ["⚽", "🅰️", "⚽", "⚽", "🅰️"],
     minutes_played: 350, fatigue: "high",
@@ -198,7 +204,7 @@ export const elitePlayers: ElitePlayer[] = [
   },
   {
     id: "p4", name: "Kylian Mbappé", country: "France", club: "Real Madrid", flag: "🇫🇷", position: "CF",
-    photo_url: "", last_updated: "2026-02-25",
+    photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { Finishing: 92, "Chance Creation": 80, Passing: 72, "Ball Carrying": 88, "Defensive Work": 35, Pace: 98, Fitness: 82, "Decision Making": 78 },
     form_trend: ["⚽", "-", "⚽", "⚽", "🅰️"],
     minutes_played: 410, fatigue: "medium",
@@ -214,7 +220,7 @@ export const elitePlayers: ElitePlayer[] = [
 export const eliteCoaches: EliteCoach[] = [
   {
     id: "c1", name: "Dorival Júnior", country: "Brazil", flag: "🇧🇷", team: "Brazil",
-    photo_url: "", last_updated: "2026-02-25",
+    photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { "Tactical Flexibility": 72, "Game Management": 78, "Player Development": 80, "Substitution Impact": 70, "Defensive Organization": 68, "Attacking Patterns": 82, "Adaptation vs Opponents": 75, "Leadership/Discipline": 72 },
     formation_preference: "4-2-3-1 / 4-3-3",
     substitution_tendency: "Early subs (55-65') when trailing",
@@ -228,7 +234,7 @@ export const eliteCoaches: EliteCoach[] = [
   },
   {
     id: "c2", name: "Julian Nagelsmann", country: "Germany", flag: "🇩🇪", team: "Germany",
-    photo_url: "", last_updated: "2026-02-25",
+    photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { "Tactical Flexibility": 88, "Game Management": 82, "Player Development": 85, "Substitution Impact": 80, "Defensive Organization": 78, "Attacking Patterns": 85, "Adaptation vs Opponents": 82, "Leadership/Discipline": 75 },
     formation_preference: "4-2-3-1",
     substitution_tendency: "Strategic subs around 60-70'",
@@ -242,7 +248,7 @@ export const eliteCoaches: EliteCoach[] = [
   },
   {
     id: "c3", name: "Lionel Scaloni", country: "Argentina", flag: "🇦🇷", team: "Argentina",
-    photo_url: "", last_updated: "2026-02-24",
+    photo_url: "", last_updated: "2026-02-24", league_id: "wc", league_name: "World Cup",
     radar_scores: { "Tactical Flexibility": 80, "Game Management": 90, "Player Development": 78, "Substitution Impact": 85, "Defensive Organization": 82, "Attacking Patterns": 78, "Adaptation vs Opponents": 88, "Leadership/Discipline": 85 },
     formation_preference: "4-3-3",
     substitution_tendency: "Late game changers (70'+)",
@@ -256,7 +262,7 @@ export const eliteCoaches: EliteCoach[] = [
   },
   {
     id: "c4", name: "Didier Deschamps", country: "France", flag: "🇫🇷", team: "France",
-    photo_url: "", last_updated: "2026-02-25",
+    photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
     radar_scores: { "Tactical Flexibility": 70, "Game Management": 88, "Player Development": 72, "Substitution Impact": 78, "Defensive Organization": 85, "Attacking Patterns": 72, "Adaptation vs Opponents": 80, "Leadership/Discipline": 82 },
     formation_preference: "4-3-3 / 4-2-3-1",
     substitution_tendency: "Conservative — late subs (75'+)",

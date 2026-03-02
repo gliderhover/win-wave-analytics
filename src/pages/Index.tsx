@@ -1,46 +1,72 @@
-import { Activity, Brain, BarChart3, Zap, Shield, LineChart, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useMemo } from "react";
+import { Activity, Brain, BarChart3, Zap, Shield, LineChart, ArrowRight, Trophy, ChevronRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
-import MatchCard from "@/components/MatchCard";
 import FeatureCard from "@/components/FeatureCard";
-import PricingCard from "@/components/PricingCard";
-
-const matches = [
-  { teamA: "Brazil", teamB: "Germany", flagA: "🇧🇷", flagB: "🇩🇪", probA: 48, probDraw: 26, probB: 26, signal: "bullish" as const, smartMoney: "Heavy on Brazil", kickoff: "Jun 15 • 18:00 UTC" },
-  { teamA: "Argentina", teamB: "France", flagA: "🇦🇷", flagB: "🇫🇷", probA: 42, probDraw: 28, probB: 30, signal: "neutral" as const, smartMoney: "Split market", kickoff: "Jun 16 • 20:00 UTC" },
-  { teamA: "Spain", teamB: "England", flagA: "🇪🇸", flagB: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", probA: 38, probDraw: 30, probB: 32, signal: "bearish" as const, smartMoney: "Fading Spain", kickoff: "Jun 17 • 15:00 UTC" },
-  { teamA: "Portugal", teamB: "Netherlands", flagA: "🇵🇹", flagB: "🇳🇱", probA: 44, probDraw: 28, probB: 28, signal: "bullish" as const, smartMoney: "Value on Portugal", kickoff: "Jun 18 • 18:00 UTC" },
-];
+import { Badge } from "@/components/ui/badge";
+import { leagues } from "@/lib/leagueData";
+import { getAllMatches, getTopEdges, getLeagueIdFromName } from "@/lib/multiLeagueData";
+import { useLeague } from "@/contexts/LeagueContext";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { setSelectedLeague } = useLeague();
+
+  const allMatches = useMemo(() => getAllMatches(), []);
+
+  // Next 5 World Cup upcoming matches
+  const wcUpcoming = useMemo(() =>
+    allMatches
+      .filter(m => m.status === "UPCOMING" && getLeagueIdFromName(m.league) === "wc")
+      .slice(0, 5),
+  [allMatches]);
+
+  // Top 6 edges across all leagues
+  const topEdges = useMemo(() => getTopEdges(allMatches, 6), [allMatches]);
+
+  const handleLeagueClick = (leagueId: string) => {
+    setSelectedLeague(leagueId);
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero */}
+      {/* Hero — World Cup Upcoming */}
       <section className="gradient-hero pt-32 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(175_85%_50%/0.06),transparent_60%)]" />
         <div className="container mx-auto text-center relative">
           <div className="animate-slide-up">
-            <div className="inline-flex items-center gap-2 text-xs font-mono text-primary bg-primary/10 px-3 py-1.5 rounded-full mb-6 border border-primary/20">
+            <div className="inline-flex items-center gap-2 text-xs font-mono text-primary bg-primary/10 px-3 py-1.5 rounded-full mb-4 border border-primary/20">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              LIVE — 12 matches tracked
+              World Cup featured • Full multi-league coverage available
             </div>
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-foreground mb-6 animate-slide-up-delay-1 leading-tight">
-            World Cup Betting<br />
+            World Cup Upcoming<br />
             <span className="text-glow text-primary">Intelligence</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-slide-up-delay-2">
-            AI-powered match predictions, live probability shifts, and smart money tracking. 
-            The edge serious bettors need.
+            Track upcoming World Cup matches, odds movement, and top edges. 
+            AI-powered predictions across all major leagues worldwide.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up-delay-3">
-            <Link to="/dashboard" className="gradient-primary text-primary-foreground font-bold px-8 py-3.5 rounded-lg text-lg hover:opacity-90 transition-opacity flex items-center gap-2">
-              Start 7-Day Free Trial <ArrowRight className="w-5 h-5" />
+            <Link
+              to="/dashboard"
+              onClick={() => setSelectedLeague("wc")}
+              className="gradient-primary text-primary-foreground font-bold px-8 py-3.5 rounded-lg text-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+            >
+              <Trophy className="w-5 h-5" />
+              View World Cup Schedule
             </Link>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-mono">
-              View live demo →
+            <Link
+              to="/dashboard"
+              onClick={() => setSelectedLeague("all")}
+              className="text-muted-foreground hover:text-foreground transition-colors text-sm font-mono border border-border px-6 py-3 rounded-lg hover:border-primary/30"
+            >
+              Browse All Leagues →
             </Link>
           </div>
 
@@ -48,7 +74,7 @@ const Index = () => {
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
             {[
               { value: "73.2%", label: "Hit Rate" },
-              { value: "2,847", label: "Active Users" },
+              { value: "8", label: "Leagues Tracked" },
               { value: "156", label: "Matches Analyzed" },
               { value: "+18.4%", label: "Avg ROI" },
             ].map((stat) => (
@@ -61,17 +87,128 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Live Dashboard Preview */}
-      <section id="dashboard" className="py-20 px-4">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Live Preview</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Today's Signals</h2>
-            <p className="text-muted-foreground mt-2">Real-time AI predictions for upcoming matches</p>
+      {/* World Cup Featured Module */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <div className="gradient-card rounded-xl border border-primary/20 p-6 card-glow">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-bold text-foreground">World Cup Upcoming Matches</h3>
+              </div>
+              <Link
+                to="/dashboard"
+                onClick={() => setSelectedLeague("wc")}
+                className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
+              >
+                See full schedule <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+
+            {wcUpcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">No upcoming World Cup matches found.</p>
+            ) : (
+              <div className="space-y-2">
+                {wcUpcoming.map(m => (
+                  <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                        <span>{m.flagHome}</span>
+                        <span className="truncate">{m.teamHome}</span>
+                        <span className="text-muted-foreground text-xs">vs</span>
+                        <span className="truncate">{m.teamAway}</span>
+                        <span>{m.flagAway}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                        <span>{m.kickoffDate}</span>
+                        <span>•</span>
+                        <span>{m.kickoffLocal}</span>
+                        <Badge variant="outline" className="text-[9px] ml-1">{m.league}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {m.edge >= 4 && (
+                        <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
+                          +{m.edge.toFixed(1)}%
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className={cn("text-[9px]",
+                        m.confidence === "High" ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" :
+                        m.confidence === "Medium" ? "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30" :
+                        "bg-signal-bearish/15 text-signal-bearish border-signal-bearish/30"
+                      )}>
+                        {m.confidence}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-            {matches.map((match, i) => (
-              <MatchCard key={i} {...match} />
+        </div>
+      </section>
+
+      {/* All Leagues Discovery */}
+      <section className="py-12 px-4 border-t border-border">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-6">
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">Coverage</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-2">All Leagues</h2>
+            <p className="text-muted-foreground text-sm mt-1">Full multi-league intelligence across the world's top competitions</p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {leagues.map(l => (
+              <button
+                key={l.id}
+                onClick={() => handleLeagueClick(l.id)}
+                className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border border-border bg-secondary/30 text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all"
+              >
+                <span>{l.logo}</span>
+                {l.shortName}
+              </button>
+            ))}
+            <button
+              onClick={() => handleLeagueClick("all")}
+              className="text-sm font-mono px-4 py-2 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition-all"
+            >
+              More →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Top Edges Across Leagues */}
+      <section className="py-12 px-4 border-t border-border">
+        <div className="container mx-auto max-w-4xl">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <span className="text-xs font-mono text-primary uppercase tracking-wider">Signals</span>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-1">Top Edges Across Leagues</h2>
+            </div>
+            <Link
+              to="/dashboard"
+              onClick={() => setSelectedLeague("all")}
+              className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
+            >
+              View all edges <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {topEdges.map(m => (
+              <div key={m.id} className="gradient-card rounded-lg border border-border p-3 flex items-center gap-3 hover:border-primary/30 transition-all">
+                <Badge variant="outline" className="text-[9px] font-mono shrink-0 min-w-[70px] justify-center">{m.league}</Badge>
+                <div className="flex items-center gap-1.5 flex-1 min-w-0 text-sm text-foreground font-semibold">
+                  <span>{m.flagHome}</span>
+                  <span className="truncate">{m.teamHome}</span>
+                  <span className="text-muted-foreground text-xs">vs</span>
+                  <span className="truncate">{m.teamAway}</span>
+                  <span>{m.flagAway}</span>
+                </div>
+                <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30 shrink-0">
+                  +{m.edge.toFixed(1)}% Edge
+                </Badge>
+                <span className="text-[10px] text-muted-foreground font-mono shrink-0">{m.kickoffLocal}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -85,28 +222,12 @@ const Index = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Your Unfair Advantage</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <FeatureCard icon={Brain} title="AI Match Predictor" description="Deep learning models trained on 20+ years of international football data, updated in real-time." stat="73.2%" statLabel="accuracy" />
+            <FeatureCard icon={Brain} title="AI Match Predictor" description="Deep learning models trained on 20+ years of football data across all major leagues, updated in real-time." stat="73.2%" statLabel="accuracy" />
             <FeatureCard icon={LineChart} title="Live Odds Tracker" description="Monitor probability shifts across 40+ sportsbooks. Spot value before the market corrects." stat="<2s" statLabel="update latency" />
             <FeatureCard icon={Zap} title="Smart Money Alerts" description="Know where sharp bettors are placing their money. Instant push notifications for line movements." stat="156" statLabel="signals/day" />
-            <FeatureCard icon={BarChart3} title="Historical Matchups" description="Comprehensive H2H data, venue performance, referee tendencies, and weather impact analysis." />
+            <FeatureCard icon={BarChart3} title="Multi-League Coverage" description="World Cup, Champions League, Premier League, La Liga, Serie A, Bundesliga, Ligue 1, and MLS." stat="8" statLabel="leagues" />
             <FeatureCard icon={Shield} title="Bankroll Manager" description="AI-optimized stake sizing based on Kelly Criterion. Protect your capital with dynamic risk limits." />
             <FeatureCard icon={Activity} title="Performance Analytics" description="Track your betting history, ROI trends, and identify your strongest markets and weaknesses." />
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="py-20 px-4 border-t border-border">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Pricing</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">Choose Your Edge</h2>
-            <p className="text-muted-foreground mt-2">Cancel anytime. 7-day free trial on all plans.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto items-start">
-            <PricingCard name="Starter" price={29} description="Essential signals" features={["AI match predictions", "Daily signal alerts", "Basic matchup data", "Email support"]} />
-            <PricingCard name="Pro" price={59} description="Full analytics suite" popular features={["Everything in Starter", "Live odds tracker", "Smart money indicators", "Bankroll manager", "Priority alerts", "API access"]} />
-            <PricingCard name="Elite" price={99} description="Maximum edge" features={["Everything in Pro", "Custom AI models", "1-on-1 strategy calls", "Arbitrage scanner", "White-glove onboarding", "Dedicated Slack channel"]} />
           </div>
         </div>
       </section>

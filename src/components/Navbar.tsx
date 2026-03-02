@@ -1,7 +1,15 @@
-import { Activity, Crown, Lock } from "lucide-react";
+import { Activity, Crown, Lock, ChevronDown } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useUserTier, Tier } from "@/contexts/UserTierContext";
+import { useLeague } from "@/contexts/LeagueContext";
+import { leagues } from "@/lib/leagueData";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navLinks = [
   { to: "/dashboard", label: "Dashboard" },
@@ -16,12 +24,17 @@ const tiers: Tier[] = ["base", "pro", "elite"];
 
 const Navbar = () => {
   const { tier, setTier, hasAccess } = useUserTier();
+  const { selectedLeague, setSelectedLeague } = useLeague();
   const location = useLocation();
+
+  const currentLeague = selectedLeague === "all"
+    ? "All Leagues"
+    : leagues.find(l => l.id === selectedLeague)?.shortName ?? "All Leagues";
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2">
             <Activity className="w-6 h-6 text-primary" />
             <span className="font-bold text-lg text-foreground">BetIQ</span>
@@ -31,6 +44,25 @@ const Navbar = () => {
               </span>
             )}
           </Link>
+
+          {/* League selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="hidden md:flex items-center gap-1 text-xs font-mono px-2.5 py-1.5 rounded-md bg-secondary border border-border text-foreground hover:border-primary/30 transition-colors">
+              {leagues.find(l => l.id === selectedLeague)?.logo ?? "🌍"} {currentLeague}
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[180px]">
+              <DropdownMenuItem onClick={() => setSelectedLeague("all")} className={cn(selectedLeague === "all" && "text-primary")}>
+                🌍 All Leagues
+              </DropdownMenuItem>
+              {leagues.map(l => (
+                <DropdownMenuItem key={l.id} onClick={() => setSelectedLeague(l.id)} className={cn(selectedLeague === l.id && "text-primary")}>
+                  {l.logo} {l.shortName}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map(link => {
               const locked = link.requiresTier && !hasAccess(link.requiresTier);

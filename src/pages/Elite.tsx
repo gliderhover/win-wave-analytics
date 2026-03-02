@@ -19,9 +19,9 @@ import { useSearchParams } from "react-router-dom";
 type EntityType = "team" | "player" | "coach";
 
 const getEntities = (type: EntityType) => {
-  if (type === "team") return eliteTeams.map(t => ({ id: t.id, name: t.name, flag: t.flag, sub: t.country }));
-  if (type === "player") return elitePlayers.map(p => ({ id: p.id, name: p.name, flag: p.flag, sub: `${p.position} — ${p.club}` }));
-  return eliteCoaches.map(c => ({ id: c.id, name: c.name, flag: c.flag, sub: c.team }));
+  if (type === "team") return eliteTeams.map(t => ({ id: t.id, name: t.name, flag: t.flag, sub: t.country, league: t.league_name }));
+  if (type === "player") return elitePlayers.map(p => ({ id: p.id, name: p.name, flag: p.flag, sub: `${p.position} — ${p.club}`, league: p.league_name }));
+  return eliteCoaches.map(c => ({ id: c.id, name: c.name, flag: c.flag, sub: c.team, league: c.league_name }));
 };
 
 const getEntity = (type: EntityType, id: string) => {
@@ -102,7 +102,8 @@ const DigitalTwinTab = () => {
             >
               <span className="mr-2">{e.flag}</span>
               <span className="font-medium">{e.name}</span>
-              <span className="text-xs text-muted-foreground ml-2">{e.sub}</span>
+              <span className="text-[10px] text-muted-foreground ml-2">{e.sub}</span>
+              <span className="text-[9px] font-mono text-primary/70 ml-1">({e.league})</span>
             </button>
           ))}
         </div>

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { mockMatches } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
+import { useLeague } from "@/contexts/LeagueContext";
+import { leagues } from "@/lib/leagueData";
+import { getAllMatches, getTopEdges } from "@/lib/multiLeagueData";
 import EdgeEnginePanel from "@/components/dashboard/EdgeEnginePanel";
 import SmartMoneyDashboard from "@/components/dashboard/SmartMoneyDashboard";
 import LiveProbabilityPanel from "@/components/dashboard/LiveProbabilityPanel";
@@ -18,7 +21,12 @@ import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const { isPro } = useUserTier();
+  const { selectedLeague } = useLeague();
   const [selectedMatch, setSelectedMatch] = useState(mockMatches[0]);
+
+  const leagueLabel = selectedLeague === "all"
+    ? "All Leagues"
+    : leagues.find(l => l.id === selectedLeague)?.shortName ?? "All Leagues";
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,7 +37,10 @@ const Dashboard = () => {
         <div className="container mx-auto">
           {/* Match Selector */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Dashboard</h1>
+            <div className="flex items-center gap-3 mb-4">
+              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <span className="text-xs font-mono text-muted-foreground bg-secondary px-2 py-1 rounded border border-border">{leagueLabel}</span>
+            </div>
 
             {/* Live Games + Game Schedule */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
