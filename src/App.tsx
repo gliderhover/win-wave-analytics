@@ -12,6 +12,11 @@ import Performance from "./pages/Performance";
 import Pricing from "./pages/Pricing";
 import Suggestions from "./pages/Suggestions";
 import Elite from "./pages/Elite";
+import Simulation from "./pages/Simulation";
+import SimulationContest from "./pages/SimulationContest";
+import SimulationPortfolio from "./pages/SimulationPortfolio";
+import SimulationLeaderboard from "./pages/SimulationLeaderboard";
+import SimulationCertification from "./pages/SimulationCertification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +37,11 @@ const App = () => (
               <Route path="/suggestions" element={<Suggestions />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/elite" element={<Elite />} />
+              <Route path="/simulation" element={<Simulation />} />
+              <Route path="/simulation/contest" element={<SimulationContest />} />
+              <Route path="/simulation/portfolio" element={<SimulationPortfolio />} />
+              <Route path="/simulation/leaderboard" element={<SimulationLeaderboard />} />
+              <Route path="/simulation/certification" element={<SimulationCertification />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

@@ -15,6 +15,7 @@ const navLinks = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/matches", label: "Matches" },
   { to: "/suggestions", label: "Suggestions" },
+  { to: "/simulation", label: "Simulation", isNew: true },
   { to: "/performance", label: "Performance" },
   { to: "/elite", label: "Elite", requiresTier: "elite" as Tier },
   { to: "/pricing", label: "Pricing" },
@@ -66,19 +67,23 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map(link => {
               const locked = link.requiresTier && !hasAccess(link.requiresTier);
+              const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
               return (
                 <Link
                   key={link.to}
                   to={locked ? "/pricing" : link.to}
                   className={cn(
                     "text-sm px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5",
-                    location.pathname === link.to
+                    isActive
                       ? "text-foreground bg-secondary"
                       : "text-muted-foreground hover:text-foreground",
                     locked && "opacity-60"
                   )}
                 >
                   {link.label}
+                  {(link as any).isNew && (
+                    <span className="text-[8px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full border border-primary/30 leading-none">NEW</span>
+                  )}
                   {locked && <Lock className="w-3 h-3" />}
                   {link.requiresTier === "elite" && !locked && <Crown className="w-3 h-3 text-primary" />}
                 </Link>
