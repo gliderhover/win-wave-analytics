@@ -19,7 +19,7 @@ const Matches = () => {
       <Navbar />
       <TopEdgeRibbon />
 
-      <div className="pt-8 pb-20 px-4">
+      <div className="pt-[7.5rem] pb-20 px-4">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold text-foreground mb-6">{t("matches.title")}</h1>
 
