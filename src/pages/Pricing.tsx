@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { Check, X, Crown } from "lucide-react";
 import { useUserTier, Tier } from "@/contexts/UserTierContext";
+import { useI18n } from "@/i18n/I18nContext";
 import { cn } from "@/lib/utils";
 
 const features = [
@@ -47,6 +48,7 @@ const plans: { tier: Tier; name: string; price: number; description: string; bad
 
 const Pricing = () => {
   const { tier, setTier } = useUserTier();
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,12 +57,11 @@ const Pricing = () => {
       <div className="pt-24 pb-20 px-4">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Pricing</span>
-            <h1 className="text-3xl md:text-5xl font-bold text-foreground mt-2 mb-3">Choose Your Edge</h1>
-            <p className="text-muted-foreground">Cancel anytime. 7-day free trial on Pro & Elite.</p>
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">{t("pricing.title")}</span>
+            <h1 className="text-3xl md:text-5xl font-bold text-foreground mt-2 mb-3">{t("pricing.subtitle")}</h1>
+            <p className="text-muted-foreground">{t("pricing.cancelAnytime")}</p>
           </div>
 
-          {/* Plan Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             {plans.map(plan => {
               const isActive = tier === plan.tier;
@@ -83,7 +84,7 @@ const Pricing = () => {
                   <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                   <div className="mb-6">
                     <span className="font-mono text-5xl font-bold text-foreground">${plan.price}</span>
-                    <span className="text-muted-foreground text-sm">/mo</span>
+                    <span className="text-muted-foreground text-sm">{t("pricing.mo")}</span>
                   </div>
                   <ul className="space-y-3 mb-6">
                     {plan.features.map(f => (
@@ -102,19 +103,18 @@ const Pricing = () => {
                         : "gradient-primary text-primary-foreground hover:opacity-90"
                     )}
                   >
-                    {isActive ? "Current Plan" : `Upgrade to ${plan.name}`}
+                    {isActive ? t("pricing.currentPlan") : t("pricing.upgradeToTier", { tier: plan.name })}
                   </button>
                 </div>
               );
             })}
           </div>
 
-          {/* Feature Comparison Table */}
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-4 text-center">Feature Comparison</h2>
+            <h2 className="text-xl font-bold text-foreground mb-4 text-center">{t("pricing.featureComparison")}</h2>
             <div className="gradient-card rounded-xl border border-border overflow-hidden">
               <div className="grid grid-cols-4 bg-secondary/50 px-6 py-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                <span>Feature</span>
+                <span>{t("pricing.feature")}</span>
                 <span className="text-center">Base</span>
                 <span className="text-center">Pro</span>
                 <span className="text-center">Elite</span>

@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useI18n } from "@/i18n/I18nContext";
 import { generateLeaderboard, MIN_BETS_TO_RANK, LeaderboardEntry } from "@/lib/simulationData";
 import { leagues } from "@/lib/leagueData";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ const badgeIcons: Record<string, { icon: React.ReactNode; label: string }> = {
 const SimulationLeaderboard = () => {
   const [timeframe, setTimeframe] = useState("season");
   const [leagueFilter, setLeagueFilter] = useState("all");
+  const { t } = useI18n();
 
   const leaderboard = useMemo(() => generateLeaderboard(timeframe), [timeframe]);
 
@@ -27,48 +29,47 @@ const SimulationLeaderboard = () => {
       <div className="pt-24 pb-20 px-4">
         <div className="container mx-auto max-w-4xl">
           <Link to="/simulation" className="flex items-center gap-1 text-xs text-primary font-mono mb-4 hover:underline">
-            <ArrowLeft className="w-3 h-3" /> Back to Simulation
+            <ArrowLeft className="w-3 h-3" /> {t("contest.backToSim")}
           </Link>
 
           <div className="flex items-center gap-2 mb-2">
             <Trophy className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold text-foreground">Global Leaderboard</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("leaderboard.title")}</h1>
           </div>
           <p className="text-sm text-muted-foreground mb-6">
-            Top 100 paper traders worldwide •
+            {t("leaderboard.subtitle")} •
             <Tooltip>
               <TooltipTrigger className="inline-flex items-center gap-1 ml-1 text-primary underline underline-offset-2 cursor-help">
-                How ranking works <Info className="w-3 h-3" />
+                {t("leaderboard.howRankingWorks")} <Info className="w-3 h-3" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs text-xs">
-                <p className="font-semibold mb-1">Score = ROI% − (0.25 × MaxDrawdown%)</p>
-                <p>This rewards consistent returns while penalizing large drawdowns. Minimum {MIN_BETS_TO_RANK} bets required to rank.</p>
+                <p className="font-semibold mb-1">{t("leaderboard.rankingFormula")}</p>
+                <p>{t("leaderboard.rankingExplanation", { min: String(MIN_BETS_TO_RANK) })}</p>
               </TooltipContent>
             </Tooltip>
           </p>
 
-          {/* Controls */}
           <div className="flex gap-3 mb-6 flex-wrap">
             <div className="flex gap-1.5">
-              {["weekly", "monthly", "season", "all-time"].map(t => (
+              {["weekly", "monthly", "season", "all-time"].map(tf => (
                 <button
-                  key={t}
-                  onClick={() => setTimeframe(t)}
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
                   className={cn(
                     "text-[10px] font-semibold px-3 py-1.5 rounded-full border transition-all capitalize",
-                    timeframe === t
+                    timeframe === tf
                       ? "border-primary bg-primary/10 text-foreground"
                       : "border-border text-muted-foreground hover:border-primary/30"
                   )}
                 >
-                  {t === "all-time" ? "All Time" : t}
+                  {tf === "all-time" ? t("leaderboard.allTime") : t(`leaderboard.${tf}` as any)}
                 </button>
               ))}
             </div>
             <Select value={leagueFilter} onValueChange={setLeagueFilter}>
               <SelectTrigger className="h-7 w-[130px] text-[10px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all" className="text-xs">All Leagues</SelectItem>
+                <SelectItem value="all" className="text-xs">{t("nav.allLeagues")}</SelectItem>
                 {leagues.map(l => (
                   <SelectItem key={l.id} value={l.id} className="text-xs">{l.logo} {l.shortName}</SelectItem>
                 ))}
@@ -76,16 +77,15 @@ const SimulationLeaderboard = () => {
             </Select>
           </div>
 
-          {/* Table */}
           <div className="gradient-card rounded-xl border border-border overflow-hidden">
             <div className="grid grid-cols-[50px_1fr_70px_80px_60px_60px_70px_70px_50px] bg-secondary/50 px-4 py-2.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               <span>#</span>
-              <span>User</span>
-              <span className="text-right">Score</span>
-              <span className="text-right">ROI</span>
-              <span className="text-right">Win%</span>
-              <span className="text-right">Bets</span>
-              <span className="text-right">Bankroll</span>
+              <span>{t("leaderboard.user")}</span>
+              <span className="text-right">{t("leaderboard.score")}</span>
+              <span className="text-right">{t("portfolio.roi")}</span>
+              <span className="text-right">{t("performance.winRate")}</span>
+              <span className="text-right">{t("leaderboard.bets")}</span>
+              <span className="text-right">{t("leaderboard.bankroll")}</span>
               <span className="text-right">MaxDD</span>
               <span></span>
             </div>
@@ -128,7 +128,7 @@ const SimulationLeaderboard = () => {
           </div>
 
           <div className="mt-6 text-center text-[10px] text-muted-foreground font-mono">
-            Simulation only • No real money • No payouts • Not betting advice. 18+.
+            {t("simulation.disclaimer")} • {t("simulation.footerDisclaimer")}
           </div>
         </div>
       </div>

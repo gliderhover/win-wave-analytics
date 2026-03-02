@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { mockMatches } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { useLeague } from "@/contexts/LeagueContext";
+import { useI18n } from "@/i18n/I18nContext";
 import { leagues } from "@/lib/leagueData";
 import { getAllMatches, getTopEdges } from "@/lib/multiLeagueData";
 import EdgeEnginePanel from "@/components/dashboard/EdgeEnginePanel";
@@ -24,12 +25,13 @@ import { cn } from "@/lib/utils";
 const Dashboard = () => {
   const { isPro } = useUserTier();
   const { selectedLeague } = useLeague();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [selectedMatch, setSelectedMatch] = useState(mockMatches[0]);
 
   const leagueLabel = selectedLeague === "all"
-    ? "All Leagues"
-    : leagues.find(l => l.id === selectedLeague)?.shortName ?? "All Leagues";
+    ? t("nav.allLeagues")
+    : leagues.find(l => l.id === selectedLeague)?.shortName ?? t("nav.allLeagues");
 
   return (
     <div className="min-h-screen bg-background">
@@ -41,7 +43,7 @@ const Dashboard = () => {
           {/* Match Selector */}
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              <h1 className="text-2xl font-bold text-foreground">{t("dashboard.title")}</h1>
               <span className="text-xs font-mono text-muted-foreground bg-secondary px-2 py-1 rounded border border-border">{leagueLabel}</span>
             </div>
 
@@ -72,7 +74,7 @@ const Dashboard = () => {
                 >
                   <span>{match.flagA}</span>
                   <span>{match.teamA}</span>
-                  <span className="text-muted-foreground">vs</span>
+                  <span className="text-muted-foreground">{t("common.vs")}</span>
                   <span>{match.teamB}</span>
                   <span>{match.flagB}</span>
                 </button>
@@ -86,7 +88,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-4">
                 <span className="text-3xl">{selectedMatch.flagA}</span>
                 <div>
-                  <div className="text-xl font-bold text-foreground">{selectedMatch.teamA} vs {selectedMatch.teamB}</div>
+                  <div className="text-xl font-bold text-foreground">{selectedMatch.teamA} {t("common.vs")} {selectedMatch.teamB}</div>
                   <div className="text-xs text-muted-foreground font-mono">{selectedMatch.kickoff}</div>
                 </div>
                 <span className="text-3xl">{selectedMatch.flagB}</span>
@@ -104,7 +106,7 @@ const Dashboard = () => {
                   onClick={() => navigate(`/match/${selectedMatch.id}`)}
                   className="text-[10px] font-mono px-3 py-1.5 rounded-md border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                 >
-                  Match Lab →
+                  {t("dashboard.matchLab")}
                 </button>
                 <MatchQuickActions matchId={selectedMatch.id} teamA={selectedMatch.teamA} teamB={selectedMatch.teamB} />
               </div>
@@ -113,15 +115,15 @@ const Dashboard = () => {
             {/* Basic Probabilities - FREE */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">{selectedMatch.teamA} Win</div>
+                <div className="text-xs text-muted-foreground mb-1">{selectedMatch.teamA} {t("common.win")}</div>
                 <div className="font-mono text-2xl font-bold text-primary">{selectedMatch.modelProbA}%</div>
               </div>
               <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">Draw</div>
+                <div className="text-xs text-muted-foreground mb-1">{t("common.draw")}</div>
                 <div className="font-mono text-2xl font-bold text-foreground">{selectedMatch.modelProbDraw}%</div>
               </div>
               <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                <div className="text-xs text-muted-foreground mb-1">{selectedMatch.teamB} Win</div>
+                <div className="text-xs text-muted-foreground mb-1">{selectedMatch.teamB} {t("common.win")}</div>
                 <div className="font-mono text-2xl font-bold text-signal-bearish">{selectedMatch.modelProbB}%</div>
               </div>
             </div>
@@ -129,7 +131,6 @@ const Dashboard = () => {
 
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
               <OddsMovementChart match={selectedMatch} full={isPro} />
               <AIInsight match={selectedMatch} />
@@ -137,8 +138,6 @@ const Dashboard = () => {
               <EdgeEnginePanel match={selectedMatch} />
               <SmartMoneyDashboard match={selectedMatch} />
             </div>
-
-            {/* Right Column */}
             <div className="space-y-6">
               <LiveProbabilityPanel match={selectedMatch} />
               <EliteDDSnapshot />
