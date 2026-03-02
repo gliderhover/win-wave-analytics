@@ -19,6 +19,12 @@ import SimulationPortfolio from "./pages/SimulationPortfolio";
 import SimulationLeaderboard from "./pages/SimulationLeaderboard";
 import SimulationCertification from "./pages/SimulationCertification";
 import MatchLab from "./pages/MatchLab";
+import Community from "./pages/Community";
+import CommunityCategory from "./pages/CommunityCategory";
+import CommunityPostPage from "./pages/CommunityPost";
+import CommunityNewPost from "./pages/CommunityNewPost";
+import CommunityProfile from "./pages/CommunityProfile";
+import CommunityMod from "./pages/CommunityMod";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -48,6 +54,12 @@ const App = () => (
               <Route path="/simulation/leaderboard" element={<SimulationLeaderboard />} />
               <Route path="/simulation/certification" element={<SimulationCertification />} />
               <Route path="/match/:id" element={<MatchLab />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/community/r/:categorySlug" element={<CommunityCategory />} />
+              <Route path="/community/post/:postId" element={<CommunityPostPage />} />
+              <Route path="/community/new" element={<CommunityNewPost />} />
+              <Route path="/community/profile/:userId" element={<CommunityProfile />} />
+              <Route path="/community/mod" element={<CommunityMod />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

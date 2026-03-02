@@ -11,6 +11,7 @@ const en = {
   "nav.upgrade": "Upgrade",
   "nav.allLeagues": "All Leagues",
   "nav.new": "NEW",
+  "nav.community": "Community",
 
   // Common
   "common.vs": "vs",
