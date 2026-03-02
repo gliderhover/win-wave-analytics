@@ -13,7 +13,7 @@ import {
   Eye,
   GitCompare,
   Lock,
-  MoreVertical,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -99,7 +99,7 @@ const MatchQuickActions = ({ matchId, teamA, teamB, className }: MatchQuickActio
   const menu = (
     <div className="py-1">
       <div className="px-3 py-1.5 text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-        Quick Actions
+        Match Details
       </div>
       {actions.map((item) => {
         const locked = !hasAccess(item.requiredTier);
@@ -128,46 +128,29 @@ const MatchQuickActions = ({ matchId, teamA, teamB, className }: MatchQuickActio
     </div>
   );
 
-  if (isMobile) {
-    return (
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            className={cn(
-              "p-1.5 rounded-md hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors",
-              className
-            )}
-            aria-label="Match actions"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-56 p-0 border-border bg-card">
-          {menu}
-        </PopoverContent>
-      </Popover>
-    );
-  }
+  const triggerButton = (
+    <button
+      className={cn(
+        "inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border",
+        "bg-secondary/50 text-foreground hover:bg-primary/15 hover:text-primary hover:border-primary/40 transition-all",
+        className
+      )}
+      aria-label="Detail"
+    >
+      Detail
+      <ChevronRight className="w-3 h-3" />
+    </button>
+  );
 
-  // Desktop: show on hover via popover with hover-like behavior
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          className={cn(
-            "p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100",
-            className
-          )}
-          aria-label="Match quick actions"
-          onMouseEnter={() => setOpen(true)}
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
+        {triggerButton}
       </PopoverTrigger>
       <PopoverContent
         align="end"
         className="w-56 p-0 border-border bg-card"
-        onMouseLeave={() => setOpen(false)}
+        onMouseLeave={() => !isMobile && setOpen(false)}
       >
         {menu}
       </PopoverContent>
