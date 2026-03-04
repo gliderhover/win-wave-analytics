@@ -1,4 +1,4 @@
-import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase } from "lucide-react";
+import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useUserTier, Tier } from "@/contexts/UserTierContext";
 import { useLeague } from "@/contexts/LeagueContext";
@@ -22,7 +22,6 @@ const navLinks = [
   { to: "/suggestions", labelKey: "nav.suggestions" },
   { to: "/community", labelKey: "nav.community", isNew: true },
   { to: "/simulation", labelKey: "nav.simulation" },
-  { to: "/performance", labelKey: "nav.performance" },
   { to: "/elite", labelKey: "nav.elite", requiresTier: "elite" as Tier },
   { to: "/pricing", labelKey: "nav.pricing" },
 ];
@@ -141,6 +140,9 @@ const Navbar = () => {
               <DropdownMenuContent align="end" className="min-w-[180px]">
                 <DropdownMenuItem onClick={() => navigate("/account")}>
                   <User className="w-4 h-4 mr-2" /> Account
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/account/performance")}>
+                  <BarChart3 className="w-4 h-4 mr-2" /> My Performance
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/simulation/portfolio")}>
                   <Briefcase className="w-4 h-4 mr-2" /> Simulation Portfolio
