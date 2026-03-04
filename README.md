@@ -60,6 +60,18 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## API (Vercel Serverless)
+
+The app exposes Vercel serverless functions under `/api`. All run in Node.js and use the `(req, res)` signature.
+
+**Required env (set in Vercel):** `SPORTMONKS_API_TOKEN` — never expose this on the frontend.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/health` | Health check; returns `ok`, `sportmonksKeyPresent`, `timestamp`. |
+| `GET /api/fixtures` | Upcoming fixtures from Sportmonks. Query: `leagueIds` (comma-separated, default `732,2,8,564,384`), `days` (default `30`), `includeEuropa` (`true`/`false`, default `false`). Example: `GET /api/fixtures?leagueIds=8,2&days=14&includeEuropa=true` |
+| `GET /api/leagues/top` | Static list of top leagues (World Cup, UCL, Premier League, La Liga, Serie A, Europa League). |
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
