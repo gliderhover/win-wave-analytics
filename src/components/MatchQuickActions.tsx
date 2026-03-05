@@ -5,26 +5,37 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useI18n } from "@/i18n/I18nContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import type { MatchContext } from "@/types/match";
 import {
   FlaskConical, Compass, CornerDownRight, CreditCard, Bell, Eye, GitCompare, Lock, ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface MatchQuickActionsProps { matchId: string; teamA: string; teamB: string; className?: string; }
+interface MatchQuickActionsProps {
+  match?: MatchContext;
+  matchId?: string;
+  teamA?: string;
+  teamB?: string;
+  className?: string;
+}
 interface ActionItem { labelKey: string; icon: React.ReactNode; requiredTier: "base" | "pro" | "elite"; action: () => void; }
 
-const MatchQuickActions = ({ matchId, teamA, teamB, className }: MatchQuickActionsProps) => {
+const MatchQuickActions = ({ match, matchId: matchIdProp, teamA: teamAProp, teamB: teamBProp, className }: MatchQuickActionsProps) => {
   const navigate = useNavigate();
   const { hasAccess } = useUserTier();
   const isMobile = useIsMobile();
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+
+  const id = match ? String(match.id) : matchIdProp ?? "";
+  const teamA = match?.home.name ?? teamAProp ?? "";
+  const teamB = match?.away.name ?? teamBProp ?? "";
   const matchLabel = `${teamA} vs ${teamB}`;
 
   const actions: ActionItem[] = [
-    { labelKey: "quickActions.openMatchLab", icon: <FlaskConical className="w-3.5 h-3.5" />, requiredTier: "base", action: () => navigate(`/match/${matchId}`) },
-    { labelKey: "quickActions.tactics", icon: <Compass className="w-3.5 h-3.5" />, requiredTier: "pro", action: () => navigate(`/match/${matchId}#tactics`) },
-    { labelKey: "quickActions.cornersCards", icon: <CornerDownRight className="w-3.5 h-3.5" />, requiredTier: "pro", action: () => navigate(`/match/${matchId}#corners-cards`) },
+    { labelKey: "quickActions.openMatchLab", icon: <FlaskConical className="w-3.5 h-3.5" />, requiredTier: "base", action: () => navigate(`/match/${id}`) },
+    { labelKey: "quickActions.tactics", icon: <Compass className="w-3.5 h-3.5" />, requiredTier: "pro", action: () => navigate(`/match/${id}#tactics`) },
+    { labelKey: "quickActions.cornersCards", icon: <CornerDownRight className="w-3.5 h-3.5" />, requiredTier: "pro", action: () => navigate(`/match/${id}#corners-cards`) },
     { labelKey: "quickActions.setAlerts", icon: <Bell className="w-3.5 h-3.5" />, requiredTier: "pro", action: () => toast.success(t("quickActions.alertSet", { match: matchLabel })) },
     { labelKey: "quickActions.addWatchlist", icon: <Eye className="w-3.5 h-3.5" />, requiredTier: "base", action: () => toast.success(t("quickActions.addedToWatchlist", { match: matchLabel })) },
     { labelKey: "quickActions.compare", icon: <GitCompare className="w-3.5 h-3.5" />, requiredTier: "elite", action: () => toast.info(t("quickActions.compareComingSoon")) },

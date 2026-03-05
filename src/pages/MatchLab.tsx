@@ -1,6 +1,8 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useMemo, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { mockMatches } from "@/lib/mockData";
+import type { MatchData } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { useI18n } from "@/i18n/I18nContext";
 import Navbar from "@/components/Navbar";
@@ -9,7 +11,8 @@ import MatchLabTactics from "@/components/matchlab/MatchLabTactics";
 import MatchLabCornersCards from "@/components/matchlab/MatchLabCornersCards";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { getFixture } from "@/lib/api";
+import { toMatchContext } from "@/types/match";
 
 const MatchLab = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,10 +20,21 @@ const MatchLab = () => {
   const location = useLocation();
   const { isPro, isElite, hasAccess } = useUserTier();
   const { t } = useI18n();
-
-  const match = useMemo(() => mockMatches.find(m => m.id === id) ?? mockMatches[0], [id]);
-
   const scrolledRef = useRef(false);
+
+  const {
+    data: fixtureData,
+    isLoading: fixtureLoading,
+    isError: fixtureError,
+  } = useQuery({
+    queryKey: ["fixture", id],
+    queryFn: () => getFixture(id!),
+    enabled: !!id,
+    retry: 1,
+  });
+
+  const matchContext = fixtureData ? toMatchContext(fixtureData) : null;
+
   useEffect(() => {
     if (scrolledRef.current) return;
     const hash = location.hash?.replace("#", "");
@@ -30,7 +44,48 @@ const MatchLab = () => {
         scrolledRef.current = true;
       }, 300);
     }
-  }, [location.hash]);
+  }, [location.hash, matchContext]);
+
+  if (fixtureLoading && !matchContext) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <TopEdgeRibbon />
+        <div className="pt-[7.5rem] pb-20 px-4">
+          <div className="container mx-auto max-w-7xl">
+            <p className="text-sm text-muted-foreground">Loading match…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fixtureError || !matchContext) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <TopEdgeRibbon />
+        <div className="pt-[7.5rem] pb-20 px-4">
+          <div className="container mx-auto max-w-7xl">
+            <div className="flex items-center gap-3 mb-6">
+              <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <p className="text-sm text-muted-foreground">Match details unavailable.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const legacyMatch: MatchData = {
+    ...mockMatches[0],
+    id: String(matchContext.id),
+    teamA: matchContext.home.name,
+    teamB: matchContext.away.name,
+    kickoff: matchContext.kickoff,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,23 +104,17 @@ const MatchLab = () => {
                 <Badge variant="outline" className="text-[10px] font-mono">{t("matchlab.pro")}</Badge>
               </h1>
               <p className="text-xs text-muted-foreground font-mono">
-                {match.flagA} {match.teamA} {t("common.vs")} {match.teamB} {match.flagB} • {match.kickoff}
+                {matchContext.home.name} vs {matchContext.away.name} • {matchContext.leagueName} • {matchContext.kickoff}
               </p>
-            </div>
-            <div className={cn(
-              "text-xs font-mono font-semibold px-3 py-1 rounded",
-              match.signal === "bullish" ? "text-accent bg-accent/10" : match.signal === "bearish" ? "text-destructive bg-destructive/10" : "text-warning bg-warning/10"
-            )}>
-              {match.signal.toUpperCase()} • {t("common.edge")} {match.edgeA > 0 ? `+${match.edgeA}%` : `${match.edgeB}%`}
             </div>
           </div>
 
           <div id="tactics">
-            <MatchLabTactics match={match} />
+            <MatchLabTactics match={legacyMatch} />
           </div>
 
           <div id="corners-cards" className="mt-6">
-            <MatchLabCornersCards match={match} />
+            <MatchLabCornersCards match={legacyMatch} />
           </div>
         </div>
       </div>

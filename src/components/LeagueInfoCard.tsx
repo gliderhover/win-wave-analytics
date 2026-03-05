@@ -110,7 +110,9 @@ const LeagueInfoCard = ({ leagueId, fixtureCount }: LeagueInfoCardProps) => {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-foreground truncate">{league.name}</h3>
+            <h3 className="text-lg font-bold text-foreground truncate">
+              {Number(leagueId) === 779 ? "Major League Soccer" : league.name}
+            </h3>
             {league.active !== undefined && (
               <Badge
                 variant="outline"

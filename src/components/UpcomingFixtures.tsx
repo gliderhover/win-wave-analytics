@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLeague } from "@/contexts/LeagueContext";
 import { fetchFixtures, UiFixture } from "@/lib/api";
+import { toMatchContextFromUiFixture } from "@/types/match";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchQuickActions from "@/components/MatchQuickActions";
@@ -86,42 +87,41 @@ const UpcomingFixtures = ({ days = 30, maxItems = 10, className }: UpcomingFixtu
         </p>
       ) : (
         <div className="space-y-2">
-          {limited.map((m: UiFixture) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                  <span className="truncate">{m.homeTeam || "TBD"}</span>
-                  <span className="text-muted-foreground text-xs">vs</span>
-                  <span className="truncate">{m.awayTeam || "TBD"}</span>
+          {limited.map((m: UiFixture) => {
+            const match = toMatchContextFromUiFixture(m);
+            return (
+              <div
+                key={m.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <span className="truncate">{m.homeTeam || "TBD"}</span>
+                    <span className="text-muted-foreground text-xs">vs</span>
+                    <span className="truncate">{m.awayTeam || "TBD"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                    {m.kickoffDate && <span>{m.kickoffDate}</span>}
+                    {m.kickoffTime && (
+                      <>
+                        <span>•</span>
+                        <span>{m.kickoffTime}</span>
+                      </>
+                    )}
+                    {m.leagueName && (
+                      <>
+                        <span>•</span>
+                        <Badge variant="outline" className="text-[9px]">
+                          {m.leagueName}
+                        </Badge>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
-                  {m.kickoffDate && <span>{m.kickoffDate}</span>}
-                  {m.kickoffTime && (
-                    <>
-                      <span>•</span>
-                      <span>{m.kickoffTime}</span>
-                    </>
-                  )}
-                  {m.leagueName && (
-                    <>
-                      <span>•</span>
-                      <Badge variant="outline" className="text-[9px]">
-                        {m.leagueName}
-                      </Badge>
-                    </>
-                  )}
-                </div>
+                <MatchQuickActions match={match} />
               </div>
-              <MatchQuickActions
-                matchId={`fixture-${m.id}`}
-                teamA={m.homeTeam || "Home"}
-                teamB={m.awayTeam || "Away"}
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@ import { useLeague } from "@/contexts/LeagueContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n/I18nContext";
 import { leagues } from "@/lib/leagueData";
-import { fetchAvailableLeagues, getLeagueInfo } from "@/lib/api";
+import { fetchAvailableLeagues } from "@/lib/api";
 import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -33,7 +33,7 @@ const navLinks = [
 const tiers: Tier[] = ["base", "pro", "elite"];
 
 const MLS_LEAGUE_ID = DEFAULT_LEAGUE_ID;
-const MLS_LABEL_FALLBACK = "Major League Soccer";
+const MLS_DROPDOWN_LABEL = "Major League Soccer (MLS)";
 
 const Navbar = () => {
   const { tier, setTier, hasAccess } = useUserTier();
@@ -53,22 +53,14 @@ const Navbar = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: mlsLeague } = useQuery({
-    queryKey: ["league-info-mls", MLS_LEAGUE_ID],
-    queryFn: () => getLeagueInfo(MLS_LEAGUE_ID),
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-  });
-
   const apiLeaguesRaw = !leaguesError ? availableLeagues?.leagues ?? [] : [];
-  const mlsLabel = mlsLeague?.name ?? MLS_LABEL_FALLBACK;
 
   const dropdownLeagues = useMemo(() => {
     const rest = apiLeaguesRaw
       .filter((l) => String(l.id) !== MLS_LEAGUE_ID)
       .map((l) => ({ id: String(l.id), name: l.name ?? "" }));
-    return [{ id: MLS_LEAGUE_ID, name: mlsLabel, isPinnedMls: true as const }, ...rest];
-  }, [apiLeaguesRaw, mlsLabel]);
+    return [{ id: MLS_LEAGUE_ID, name: MLS_DROPDOWN_LABEL, isPinnedMls: true as const }, ...rest];
+  }, [apiLeaguesRaw]);
 
   const hasDropdownLeagues = dropdownLeagues.length > 0;
 
@@ -76,7 +68,7 @@ const Navbar = () => {
 
   let currentLeague = t("nav.allLeagues");
   if (selectedApiId === MLS_LEAGUE_ID) {
-    currentLeague = mlsLabel;
+    currentLeague = MLS_DROPDOWN_LABEL;
   } else if (selectedApiId && hasDropdownLeagues) {
     const found = dropdownLeagues.find((l) => l.id === selectedApiId || String(l.id) === selectedApiId);
     if (found) {

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
 import { getLeagueInfo, getFixtures, League, Fixture } from "@/lib/api";
+import { toMatchContext } from "@/types/match";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchQuickActions from "@/components/MatchQuickActions";
@@ -120,6 +121,7 @@ const MlsOverviewCard = () => {
       {visible.length > 0 && (
         <div className="mt-2 space-y-2">
           {visible.map((m) => {
+            const match = toMatchContext(m);
             const dt = m.starting_at ? new Date(m.starting_at) : null;
             const when = dt && !Number.isNaN(dt.getTime())
               ? `${dt.toLocaleDateString(undefined, {
@@ -158,11 +160,7 @@ const MlsOverviewCard = () => {
                     <span>{status}</span>
                   </div>
                 </div>
-                <MatchQuickActions
-                  matchId={`fixture-${m.id}`}
-                  teamA={m.home.name || "Home"}
-                  teamB={m.away.name || "Away"}
-                />
+                <MatchQuickActions match={match} />
               </div>
             );
           })}

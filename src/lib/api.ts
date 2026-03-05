@@ -217,4 +217,42 @@ export async function getLeagueInfo(leagueId: string): Promise<League> {
   };
 }
 
+export interface SingleFixtureResponse {
+  id: string;
+  starting_at: string;
+  state_id: number | null;
+  league: { id: number; name: string; season_id: number | null };
+  home: { id: number; name: string } | null;
+  away: { id: number; name: string } | null;
+}
+
+export async function getFixture(fixtureId: string): Promise<SingleFixtureResponse> {
+  const search = new URLSearchParams({ id: fixtureId });
+  const data = await fetchJson<{
+    ok: boolean;
+    fixture: {
+      id: number | string;
+      starting_at: string;
+      state_id: number | null;
+      league: { id: number; name: string; season_id: number | null };
+      home: { id: number; name: string } | null;
+      away: { id: number; name: string } | null;
+    };
+  }>(`/api/fixture?${search.toString()}`);
+
+  if (!data.ok || !data.fixture) {
+    throw new Error("Failed to load fixture");
+  }
+
+  const f = data.fixture;
+  return {
+    id: String(f.id),
+    starting_at: f.starting_at,
+    state_id: f.state_id ?? null,
+    league: f.league ?? { id: 0, name: "", season_id: null },
+    home: f.home ?? null,
+    away: f.away ?? null,
+  };
+}
+
 
