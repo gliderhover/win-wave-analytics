@@ -1,10 +1,12 @@
 import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useUserTier, Tier } from "@/contexts/UserTierContext";
 import { useLeague } from "@/contexts/LeagueContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n/I18nContext";
 import { leagues } from "@/lib/leagueData";
+import { fetchAvailableLeagues } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,9 +38,33 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const currentLeague = selectedLeague === "all"
-    ? t("nav.allLeagues")
-    : leagues.find(l => l.id === selectedLeague)?.shortName ?? t("nav.allLeagues");
+  const {
+    data: availableLeagues,
+    isLoading: leaguesLoading,
+    isError: leaguesError,
+  } = useQuery({
+    queryKey: ["available-leagues", 90],
+    queryFn: () => fetchAvailableLeagues({ days: 90 }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const apiLeagues = !leaguesError ? availableLeagues?.leagues ?? [] : [];
+  const hasApiLeagues = apiLeagues.length > 0;
+
+  const selectedApiId = selectedLeague.startsWith("sm:") ? selectedLeague.slice(3) : null;
+
+  let currentLeague = t("nav.allLeagues");
+  if (selectedApiId && hasApiLeagues) {
+    const found = apiLeagues.find((l) => l.id === selectedApiId);
+    if (found) {
+      currentLeague = found.name;
+    }
+  } else if (selectedLeague !== "all") {
+    const staticLeague = leagues.find((l) => l.id === selectedLeague);
+    if (staticLeague) {
+      currentLeague = staticLeague.shortName;
+    }
+  }
 
   const handleLogout = () => {
     logout();
@@ -62,18 +88,45 @@ const Navbar = () => {
           {/* League selector */}
           <DropdownMenu>
             <DropdownMenuTrigger className="hidden md:flex items-center gap-1 text-xs font-mono px-2.5 py-1.5 rounded-md bg-secondary border border-border text-foreground hover:border-primary/30 transition-colors">
-              {leagues.find(l => l.id === selectedLeague)?.logo ?? "🌍"} {currentLeague}
+              <span>🌍</span> {currentLeague}
               <ChevronDown className="w-3 h-3 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[180px]">
-              <DropdownMenuItem onClick={() => setSelectedLeague("all")} className={cn(selectedLeague === "all" && "text-primary")}>
+              <DropdownMenuItem
+                onClick={() => setSelectedLeague("all")}
+                className={cn(selectedLeague === "all" && "text-primary")}
+              >
                 🌍 {t("nav.allLeagues")}
               </DropdownMenuItem>
-              {leagues.map(l => (
-                <DropdownMenuItem key={l.id} onClick={() => setSelectedLeague(l.id)} className={cn(selectedLeague === l.id && "text-primary")}>
-                  {l.logo} {l.shortName}
+
+              {leaguesLoading && !hasApiLeagues && (
+                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                  ...
                 </DropdownMenuItem>
-              ))}
+              )}
+
+              {hasApiLeagues
+                ? apiLeagues.map((l) => {
+                    const value = `sm:${l.id}`;
+                    return (
+                      <DropdownMenuItem
+                        key={l.id}
+                        onClick={() => setSelectedLeague(value)}
+                        className={cn(selectedLeague === value && "text-primary")}
+                      >
+                        {l.name}
+                      </DropdownMenuItem>
+                    );
+                  })
+                : leagues.map((l) => (
+                    <DropdownMenuItem
+                      key={l.id}
+                      onClick={() => setSelectedLeague(l.id)}
+                      className={cn(selectedLeague === l.id && "text-primary")}
+                    >
+                      {l.logo} {l.shortName}
+                    </DropdownMenuItem>
+                  ))}
             </DropdownMenuContent>
           </DropdownMenu>
 

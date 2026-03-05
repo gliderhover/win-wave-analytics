@@ -7,6 +7,7 @@ import ProGate from "@/components/ProGate";
 import OddsMovementChart from "@/components/dashboard/OddsMovementChart";
 import AIInsight from "@/components/dashboard/AIInsight";
 import MatchQuickActions from "@/components/MatchQuickActions";
+import UpcomingFixtures from "@/components/UpcomingFixtures";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -22,6 +23,10 @@ const Matches = () => {
       <div className="pt-[7.5rem] pb-20 px-4">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold text-foreground mb-6">{t("matches.title")}</h1>
+
+          <div className="mb-8">
+            <UpcomingFixtures days={30} />
+          </div>
 
           <div className="space-y-6">
             {mockMatches.map((match, i) => {

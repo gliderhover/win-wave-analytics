@@ -10,6 +10,7 @@ import { useLeague } from "@/contexts/LeagueContext";
 import { useI18n } from "@/i18n/I18nContext";
 import MatchQuickActions from "@/components/MatchQuickActions";
 import { cn } from "@/lib/utils";
+import UpcomingFixtures from "@/components/UpcomingFixtures";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -223,6 +224,13 @@ const Index = () => {
               </>
             ) : null}
           </div>
+        </div>
+      </section>
+
+      {/* API-backed upcoming fixtures */}
+      <section className="py-12 px-4 border-t border-border">
+        <div className="container mx-auto max-w-4xl">
+          <UpcomingFixtures days={30} />
         </div>
       </section>
 
