@@ -37,6 +37,25 @@ export const HOMEPAGE_FEATURED_IDS: number[] = [
 
 export const HOMEPAGE_FEATURED_IDS_STR = HOMEPAGE_FEATURED_IDS.join(",");
 
+/** Fixed 8 leagues for homepage Featured (Now) — one request. */
+export const HOMEPAGE_FEATURED_8_IDS: number[] = [
+  779, 8, 564, 384, 82, 301, 24, 1122,
+];
+export const HOMEPAGE_FEATURED_8_IDS_STR = HOMEPAGE_FEATURED_8_IDS.join(",");
+
+/** Chip row: supported leagues (id, short label). No UCL/World Cup unless under Upcoming soon. */
+export const CHIP_LEAGUES: { id: number; label: string }[] = [
+  { id: 779, label: "MLS" },
+  { id: 8, label: "EPL" },
+  { id: 24, label: "FA Cup" },
+  { id: 564, label: "La Liga" },
+  { id: 384, label: "Serie A" },
+  { id: 82, label: "Bundesliga" },
+  { id: 301, label: "Ligue 1" },
+  { id: 1122, label: "Libertadores" },
+  { id: 72, label: "Eredivisie" },
+];
+
 /** Lookup by id from FeaturedNow + UpcomingSoon for display names. */
 export function getLeagueNameById(id: number): string {
   const f = FEATURED_NOW_LEAGUES.find((l) => l.id === id);

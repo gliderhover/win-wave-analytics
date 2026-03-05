@@ -1,51 +1,85 @@
-import { useMemo, useState } from "react";
-import { Activity, Brain, BarChart3, Zap, Shield, LineChart, ArrowRight, Trophy, ChevronRight } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Activity, Brain, BarChart3, Zap, Shield, LineChart, Trophy, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import FeatureCard from "@/components/FeatureCard";
-import { Badge } from "@/components/ui/badge";
-import { leagues } from "@/lib/leagueData";
-import { getAllMatches, getTopEdges, getLeagueIdFromName, filterByLeague } from "@/lib/multiLeagueData";
 import { useLeague } from "@/contexts/LeagueContext";
 import { useI18n } from "@/i18n/I18nContext";
 import MatchQuickActions from "@/components/MatchQuickActions";
 import { cn } from "@/lib/utils";
 import FeaturedAndUpcomingLeagues from "@/components/FeaturedAndUpcomingLeagues";
+import { fetchFixtures, UiFixture } from "@/lib/api";
+import {
+  HOMEPAGE_FEATURED_8_IDS,
+  HOMEPAGE_FEATURED_8_IDS_STR,
+  CHIP_LEAGUES,
+  UPCOMING_SOON_LEAGUES,
+  getLeagueNameById,
+} from "@/constants/leagueGroups";
+import { toMatchContextFromUiFixture } from "@/types/match";
+import { MATCHES_PER_LEAGUE } from "@/components/FeaturedAndUpcomingLeagues";
+import type { FeaturedNowItem, UpcomingSoonItem } from "@/components/FeaturedAndUpcomingLeagues";
+
+const TOP_UPCOMING_MAX = 12;
+
+function groupByLeagueId(fixtures: UiFixture[]): Map<number, UiFixture[]> {
+  const map = new Map<number, UiFixture[]>();
+  for (const f of fixtures) {
+    const id = f.leagueId ?? 0;
+    if (id) {
+      const list = map.get(id) ?? [];
+      list.push(f);
+      map.set(id, list);
+    }
+  }
+  return map;
+}
 
 const Index = () => {
-  const navigate = useNavigate();
-  const { setSelectedLeague } = useLeague();
+  const { setSelectedLeague, selectedLeague } = useLeague();
   const { t } = useI18n();
-  const [activeLeague, setActiveLeague] = useState("wc");
 
-  const allMatches = useMemo(() => getAllMatches(), []);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["homepage-featured-fixtures", HOMEPAGE_FEATURED_8_IDS_STR],
+    queryFn: () => fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 30 }),
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
+  });
 
-  const activeLeagueObj = leagues.find(l => l.id === activeLeague);
-  const activeLeagueLabel = activeLeagueObj?.shortName ?? "World Cup";
-  const activeLeagueLogo = activeLeagueObj?.logo ?? "🏆";
+  const { featuredNow, upcomingSoon, remainingFixtures } = useMemo(() => {
+    const fixtures = isError ? [] : (data?.fixtures ?? []);
+    const grouped = groupByLeagueId(fixtures);
 
-  const filteredUpcoming = useMemo(() =>
-    filterByLeague(allMatches, activeLeague)
-      .filter(m => m.status === "UPCOMING")
-      .slice(0, 5),
-  [allMatches, activeLeague]);
+    const featuredNow: FeaturedNowItem[] = [];
+    const upcomingSoon: UpcomingSoonItem[] = [];
+    const shownIds = new Set<string>();
 
-  const filteredLive = useMemo(() =>
-    filterByLeague(allMatches, activeLeague)
-      .filter(m => m.status === "LIVE")
-      .slice(0, 3),
-  [allMatches, activeLeague]);
+    for (const id of HOMEPAGE_FEATURED_8_IDS) {
+      const list = grouped.get(id) ?? [];
+      const name = getLeagueNameById(id);
+      if (list.length > 0) {
+        const slice = list.slice(0, MATCHES_PER_LEAGUE);
+        slice.forEach((f) => shownIds.add(f.id));
+        featuredNow.push({ id, name, fixtures: slice });
+      } else {
+        upcomingSoon.push({ id, name });
+      }
+    }
 
-  const topEdges = useMemo(() => getTopEdges(allMatches, 6), [allMatches]);
+    for (const l of UPCOMING_SOON_LEAGUES) {
+      if (!upcomingSoon.some((u) => u.id === l.id)) {
+        upcomingSoon.push({ id: l.id, name: l.name });
+      }
+    }
 
-  const handleLeagueChipClick = (leagueId: string) => {
-    setActiveLeague(leagueId);
-  };
+    const remaining = fixtures
+      .filter((f) => !shownIds.has(f.id))
+      .sort((a, b) => (a.kickoffIso || "").localeCompare(b.kickoffIso || ""))
+      .slice(0, TOP_UPCOMING_MAX);
 
-  const handleViewSchedule = () => {
-    setSelectedLeague(activeLeague);
-    navigate("/dashboard");
-  };
+    return { featuredNow, upcomingSoon, remainingFixtures: remaining };
+  }, [data?.fixtures, isError]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,168 +136,82 @@ const Index = () => {
         </div>
       </section>
 
-      {/* League Selector + Featured Matches */}
-      <section className="py-16 px-4">
+      {/* League chips — supported leagues only */}
+      <section className="py-10 px-4">
         <div className="container mx-auto max-w-4xl">
-          <div className="flex flex-wrap justify-center gap-2 mb-6">
-            {leagues.map(l => (
-              <button
-                key={l.id}
-                onClick={() => handleLeagueChipClick(l.id)}
-                className={cn(
-                  "flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
-                  activeLeague === l.id
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                )}
-              >
-                <span>{l.logo}</span>
-                {l.shortName}
-              </button>
-            ))}
-          </div>
-
-          <div className="gradient-card rounded-xl border border-primary/20 p-6 card-glow">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{activeLeagueLogo}</span>
-                <h3 className="text-lg font-bold text-foreground">{activeLeagueLabel} {t("index.matches")}</h3>
-              </div>
-              <button
-                onClick={handleViewSchedule}
-                className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
-              >
-                {t("index.seeFullSchedule")} <ChevronRight className="w-3 h-3" />
-              </button>
-            </div>
-
-            {filteredLive.length > 0 && (
-              <div className="mb-4">
-                <div className="text-[10px] font-mono text-signal-bearish uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-signal-bearish animate-pulse" />
-                  {t("common.liveNow")}
-                </div>
-                <div className="space-y-2">
-                  {filteredLive.map(m => (
-                    <div key={m.id} className="flex items-center gap-3 rounded-lg border border-signal-bearish/20 bg-signal-bearish/5 p-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                          <span>{m.flagHome}</span>
-                          <span className="truncate">{m.teamHome}</span>
-                          <span className="font-mono text-foreground mx-1">{m.scoreHome}–{m.scoreAway}</span>
-                          <span className="truncate">{m.teamAway}</span>
-                          <span>{m.flagAway}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
-                          <Badge variant="outline" className="text-[8px] h-4 px-1 bg-signal-bearish/10 text-signal-bearish border-signal-bearish/30">{m.minute}'</Badge>
-                          <span>{m.league}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {m.edge >= 4 && (
-                          <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
-                            +{m.edge.toFixed(1)}%
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className={cn("text-[9px]",
-                          m.confidence === "High" ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" :
-                          m.confidence === "Medium" ? "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30" :
-                          "bg-signal-bearish/15 text-signal-bearish border-signal-bearish/30"
-                        )}>
-                          {m.confidence}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {filteredUpcoming.length === 0 && filteredLive.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">{t("index.noMatches", { league: activeLeagueLabel })}</p>
-            ) : filteredUpcoming.length > 0 ? (
-              <>
-                {filteredLive.length > 0 && (
-                  <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-2">{t("common.upcoming")}</div>
-                )}
-                <div className="space-y-2">
-                  {filteredUpcoming.map(m => (
-                    <div key={m.id} className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                          <span>{m.flagHome}</span>
-                          <span className="truncate">{m.teamHome}</span>
-                          <span className="text-muted-foreground text-xs">{t("common.vs")}</span>
-                          <span className="truncate">{m.teamAway}</span>
-                          <span>{m.flagAway}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
-                          <span>{m.kickoffDate}</span>
-                          <span>•</span>
-                          <span>{m.kickoffLocal}</span>
-                          <Badge variant="outline" className="text-[9px] ml-1">{m.league}</Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {m.edge >= 4 && (
-                          <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
-                            +{m.edge.toFixed(1)}%
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className={cn("text-[9px]",
-                          m.confidence === "High" ? "bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30" :
-                          m.confidence === "Medium" ? "bg-signal-neutral/15 text-signal-neutral border-signal-neutral/30" :
-                          "bg-signal-bearish/15 text-signal-bearish border-signal-bearish/30"
-                        )}>
-                          {m.confidence}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : null}
+          <div className="flex flex-wrap justify-center gap-2">
+            {CHIP_LEAGUES.map((l) => {
+              const value = `sm:${l.id}`;
+              const isSelected = selectedLeague === value;
+              return (
+                <Link
+                  key={l.id}
+                  to="/matches"
+                  onClick={() => setSelectedLeague(value)}
+                  className={cn(
+                    "flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
+                    isSelected
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  )}
+                >
+                  {l.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Featured leagues (Now) + Upcoming soon */}
-      <FeaturedAndUpcomingLeagues />
+      <FeaturedAndUpcomingLeagues
+        featuredNow={featuredNow}
+        upcomingSoon={upcomingSoon}
+        isLoading={isLoading}
+      />
 
-      {/* Top Edges */}
+      {/* Top Upcoming Matches Across Leagues — real fixtures, no duplicates from Featured */}
       <section className="py-12 px-4 border-t border-border">
         <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <span className="text-xs font-mono text-primary uppercase tracking-wider">{t("index.signals")}</span>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mt-1">{t("index.topEdges")}</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground">Top Upcoming Matches Across Leagues</h2>
+              <p className="text-xs text-muted-foreground mt-1">Next matches across leagues</p>
             </div>
             <Link
-              to="/dashboard"
+              to="/matches"
               onClick={() => setSelectedLeague("all")}
               className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
             >
-              {t("index.viewAllEdges")} <ChevronRight className="w-3 h-3" />
+              See full schedule <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
           <div className="space-y-2">
-            {topEdges.map(m => (
-              <div key={m.id} className="gradient-card rounded-lg border border-border p-3 flex items-center gap-3 hover:border-primary/30 transition-all group relative">
-                <Badge variant="outline" className="text-[9px] font-mono shrink-0 min-w-[70px] justify-center">{m.league}</Badge>
-                <div className="flex items-center gap-1.5 flex-1 min-w-0 text-sm text-foreground font-semibold">
-                  <span>{m.flagHome}</span>
-                  <span className="truncate">{m.teamHome}</span>
-                  <span className="text-muted-foreground text-xs">{t("common.vs")}</span>
-                  <span className="truncate">{m.teamAway}</span>
-                  <span>{m.flagAway}</span>
+            {remainingFixtures.length === 0 && !isLoading && (
+              <p className="text-sm text-muted-foreground py-4">No additional upcoming matches to show.</p>
+            )}
+            {remainingFixtures.map((m) => {
+              const match = toMatchContextFromUiFixture(m);
+              return (
+                <div key={m.id} className="gradient-card rounded-lg border border-border p-3 flex items-center gap-3 hover:border-primary/30 transition-all">
+                  <span className="text-[10px] font-mono shrink-0 min-w-[70px] justify-center rounded border border-border bg-secondary/50 px-2 py-0.5 text-muted-foreground">
+                    {m.leagueName || "—"}
+                  </span>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0 text-sm text-foreground font-semibold">
+                    <span className="truncate">{m.homeTeam || "TBD"}</span>
+                    <span className="text-muted-foreground text-xs">{t("common.vs")}</span>
+                    <span className="truncate">{m.awayTeam || "TBD"}</span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                    {m.kickoffDate && m.kickoffTime ? `${m.kickoffDate} • ${m.kickoffTime} ET` : "—"}
+                  </span>
+                  <span className="text-[9px] font-medium px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border shrink-0">
+                    Upcoming
+                  </span>
+                  <MatchQuickActions match={match} />
                 </div>
-                <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30 shrink-0">
-                  +{m.edge.toFixed(1)}% {t("common.edge")}
-                </Badge>
-                <span className="text-[10px] text-muted-foreground font-mono shrink-0">{m.kickoffLocal}</span>
-                <MatchQuickActions matchId={m.linkedMatchId ?? m.id} teamA={m.teamHome} teamB={m.teamAway} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

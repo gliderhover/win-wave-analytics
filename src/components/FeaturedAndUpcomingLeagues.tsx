@@ -1,70 +1,26 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { fetchFixtures, UiFixture } from "@/lib/api";
-import {
-  HOMEPAGE_FEATURED_IDS,
-  HOMEPAGE_FEATURED_IDS_STR,
-  UPCOMING_SOON_LEAGUES,
-  getLeagueNameById,
-} from "@/constants/leagueGroups";
+import { UiFixture } from "@/lib/api";
 import { toMatchContextFromUiFixture } from "@/types/match";
 import MatchQuickActions from "@/components/MatchQuickActions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight } from "lucide-react";
 
-const MATCHES_PER_LEAGUE = 3;
+export const MATCHES_PER_LEAGUE = 3;
 
-function groupByLeagueId(fixtures: UiFixture[]): Map<number, UiFixture[]> {
-  const map = new Map<number, UiFixture[]>();
-  for (const f of fixtures) {
-    const id = f.leagueId ?? 0;
-    if (id) {
-      const list = map.get(id) ?? [];
-      list.push(f);
-      map.set(id, list);
-    }
-  }
-  return map;
+export type FeaturedNowItem = { id: number; name: string; fixtures: UiFixture[] };
+export type UpcomingSoonItem = { id: number; name: string };
+
+interface FeaturedAndUpcomingLeaguesProps {
+  featuredNow: FeaturedNowItem[];
+  upcomingSoon: UpcomingSoonItem[];
+  isLoading?: boolean;
 }
 
-export default function FeaturedAndUpcomingLeagues() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["homepage-featured-fixtures", HOMEPAGE_FEATURED_IDS_STR],
-    queryFn: () => fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_IDS_STR, days: 30 }),
-    staleTime: 2 * 60 * 1000,
-    retry: 1,
-  });
-
-  const { featuredNow, upcomingSoon } = useMemo(() => {
-    const fixtures = isError ? [] : (data?.fixtures ?? []);
-    const grouped = groupByLeagueId(fixtures);
-
-    const featuredNow: { id: number; name: string; fixtures: UiFixture[] }[] = [];
-    const upcomingSoon: { id: number; name: string }[] = [];
-
-    for (const id of HOMEPAGE_FEATURED_IDS) {
-      const list = grouped.get(id) ?? [];
-      const name = getLeagueNameById(id);
-      if (list.length > 0) {
-        featuredNow.push({ id, name, fixtures: list.slice(0, MATCHES_PER_LEAGUE) });
-      } else {
-        upcomingSoon.push({ id, name });
-      }
-    }
-
-    // Add UCL and Europa to Upcoming Soon (branding; not in homepage fetch; 732 already handled above)
-    const upcomingIds = new Set(upcomingSoon.map((l) => l.id));
-    for (const l of UPCOMING_SOON_LEAGUES) {
-      if (l.id === 732) continue; // World Cup already in featuredNow or upcomingSoon from fetch
-      if (!upcomingIds.has(l.id)) {
-        upcomingSoon.push({ id: l.id, name: l.name });
-      }
-    }
-
-    return { featuredNow, upcomingSoon };
-  }, [data?.fixtures, isError]);
-
+export default function FeaturedAndUpcomingLeagues({
+  featuredNow,
+  upcomingSoon,
+  isLoading = false,
+}: FeaturedAndUpcomingLeaguesProps) {
   if (isLoading) {
     return (
       <section className="py-12 px-4 border-t border-border">
@@ -91,7 +47,6 @@ export default function FeaturedAndUpcomingLeagues() {
   return (
     <section className="py-12 px-4 border-t border-border">
       <div className="container mx-auto max-w-4xl space-y-10">
-        {/* Block 1: Featured leagues (Now) — only if at least one league has fixtures */}
         {featuredNow.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
