@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     let leagueIds = leagueIdsParam
       ? leagueIdsParam.split(",").map((id) => parseInt(id, 10)).filter((n) => !Number.isNaN(n))
       : [732, 2, 8, 564, 384];
-    const days = Math.max(1, parseInt(req.query.days ?? "30", 10) || 30);
+    const days = Math.max(1, parseInt(req.query.days ?? "90", 10) || 90);
     const debugAll = (req.query.all ?? "").toString().toLowerCase() === "true";
     const includeEuropa = (req.query.includeEuropa ?? "false").toString().toLowerCase() === "true";
     if (includeEuropa && !leagueIds.includes(5)) {
@@ -26,7 +26,9 @@ export default async function handler(req, res) {
     end.setUTCDate(end.getUTCDate() + days);
     const endDate = end.toISOString().slice(0, 10);
 
-    const include = "participants;league;scores;round;stage";
+    const includeAll = "participants;league;scores";
+    const includeFiltered = "participants;league;scores;round;stage";
+    const include = debugAll ? includeAll : includeFiltered;
     const base = `https://api.sportmonks.com/v3/football/fixtures/between/${startDate}/${endDate}?api_token=${token}&per_page=50&include=${encodeURIComponent(include)}`;
     const url = debugAll
       ? base
