@@ -104,7 +104,7 @@ const MatchLab = () => {
                 <Badge variant="outline" className="text-[10px] font-mono">{t("matchlab.pro")}</Badge>
               </h1>
               <p className="text-xs text-muted-foreground font-mono">
-                {matchContext.home.name} vs {matchContext.away.name} • {matchContext.leagueName} • {matchContext.kickoff}
+                {matchContext.home.name} vs {matchContext.away.name} • {matchContext.leagueName} • {matchContext.kickoff}{matchContext.kickoff !== "—" ? " ET" : ""}
               </p>
             </div>
           </div>

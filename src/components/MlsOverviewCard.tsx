@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
 import { getLeagueInfo, getFixtures, League, Fixture } from "@/lib/api";
+import { formatNYDate, formatNYDateTimeWithET } from "@/lib/time";
 import { toMatchContext } from "@/types/match";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,17 +36,7 @@ const MlsOverviewCard = () => {
   const upcomingCount = allFixtures.length;
   const visible = allFixtures.slice(0, 10);
 
-  let lastPlayedLabel = "N/A";
-  if (league?.last_played_at) {
-    const dt = new Date(league.last_played_at);
-    if (!Number.isNaN(dt.getTime())) {
-      lastPlayedLabel = dt.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    }
-  }
+  const lastPlayedLabel = league?.last_played_at ? formatNYDate(league.last_played_at) : "N/A";
 
   if (loading) {
     return (
@@ -122,16 +113,7 @@ const MlsOverviewCard = () => {
         <div className="mt-2 space-y-2">
           {visible.map((m) => {
             const match = toMatchContext(m);
-            const dt = m.starting_at ? new Date(m.starting_at) : null;
-            const when = dt && !Number.isNaN(dt.getTime())
-              ? `${dt.toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })} • ${dt.toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}`
-              : "";
+            const when = formatNYDateTimeWithET(m.starting_at);
             const status =
               m.state_id == null
                 ? "Upcoming"

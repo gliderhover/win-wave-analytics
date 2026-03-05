@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/I18nContext";
 import { leagues } from "@/lib/leagueData";
 import { fetchAvailableLeagues } from "@/lib/api";
 import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
+import { ALLOWED_LEAGUES } from "@/constants/allowedLeagues";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,9 +33,6 @@ const navLinks = [
 
 const tiers: Tier[] = ["base", "pro", "elite"];
 
-const MLS_LEAGUE_ID = DEFAULT_LEAGUE_ID;
-const MLS_DROPDOWN_LABEL = "Major League Soccer (MLS)";
-
 const Navbar = () => {
   const { tier, setTier, hasAccess } = useUserTier();
   const { selectedLeague, setSelectedLeague } = useLeague();
@@ -43,56 +41,30 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const {
-    data: availableLeagues,
-    isLoading: leaguesLoading,
-    isError: leaguesError,
-  } = useQuery({
+  // Optional: fetch for analytics/background; dropdown uses allowedLeagues only
+  useQuery({
     queryKey: ["available-leagues", 90],
     queryFn: () => fetchAvailableLeagues({ days: 90 }),
     staleTime: 5 * 60 * 1000,
   });
 
-  const apiLeaguesRaw = !leaguesError ? availableLeagues?.leagues ?? [] : [];
-
-  const dropdownLeagues = useMemo(() => {
-    const rest = apiLeaguesRaw
-      .filter((l) => String(l.id) !== MLS_LEAGUE_ID)
-      .map((l) => ({ id: String(l.id), name: l.name ?? "" }));
-    return [{ id: MLS_LEAGUE_ID, name: MLS_DROPDOWN_LABEL, isPinnedMls: true as const }, ...rest];
-  }, [apiLeaguesRaw]);
-
-  const hasDropdownLeagues = dropdownLeagues.length > 0;
-
   const selectedApiId = selectedLeague.startsWith("sm:") ? selectedLeague.slice(3) : null;
 
   let currentLeague = t("nav.allLeagues");
-  if (selectedApiId === MLS_LEAGUE_ID) {
-    currentLeague = MLS_DROPDOWN_LABEL;
-  } else if (selectedApiId && hasDropdownLeagues) {
-    const found = dropdownLeagues.find((l) => l.id === selectedApiId || String(l.id) === selectedApiId);
-    if (found) {
-      currentLeague = typeof found.name === "string" ? found.name : String(found.id);
-    }
+  if (selectedApiId) {
+    const found = ALLOWED_LEAGUES.find((l) => String(l.id) === selectedApiId);
+    if (found) currentLeague = found.name;
   } else if (selectedLeague !== "all") {
     const staticLeague = leagues.find((l) => l.id === selectedLeague);
-    if (staticLeague) {
-      currentLeague = staticLeague.shortName;
-    }
+    if (staticLeague) currentLeague = staticLeague.shortName;
   }
 
   useEffect(() => {
     if (!selectedApiId) return;
-    const idStr = String(selectedApiId);
-    const isMls = idStr === MLS_LEAGUE_ID;
-    const inList = dropdownLeagues.some((l) => String(l.id) === idStr);
+    const inList = ALLOWED_LEAGUES.some((l) => String(l.id) === selectedApiId);
     if (inList) return;
-    if (isMls) return;
-    const first = dropdownLeagues[0];
-    if (first) {
-      setSelectedLeague(`sm:${first.id}`);
-    }
-  }, [selectedApiId, dropdownLeagues, setSelectedLeague]);
+    setSelectedLeague(`sm:${DEFAULT_LEAGUE_ID}`);
+  }, [selectedApiId, setSelectedLeague]);
 
   const handleLogout = () => {
     logout();
@@ -127,29 +99,15 @@ const Navbar = () => {
                 🌍 {t("nav.allLeagues")}
               </DropdownMenuItem>
 
-              {leaguesLoading && dropdownLeagues.length <= 1 && (
-                <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                  ...
-                </DropdownMenuItem>
-              )}
-
-              {dropdownLeagues.map((l) => {
+              {ALLOWED_LEAGUES.map((l) => {
                 const value = `sm:${l.id}`;
-                const isPinnedMls = "isPinnedMls" in l && l.isPinnedMls;
                 return (
                   <DropdownMenuItem
                     key={l.id}
                     onClick={() => setSelectedLeague(value)}
                     className={cn(selectedLeague === value && "text-primary")}
                   >
-                    <span className="flex items-center gap-2">
-                      {l.name}
-                      {isPinnedMls && (
-                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
-                          Test
-                        </span>
-                      )}
-                    </span>
+                    {l.name}
                   </DropdownMenuItem>
                 );
               })}

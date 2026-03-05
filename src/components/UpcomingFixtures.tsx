@@ -105,7 +105,7 @@ const UpcomingFixtures = ({ days = 30, maxItems = 10, className }: UpcomingFixtu
                     {m.kickoffTime && (
                       <>
                         <span>•</span>
-                        <span>{m.kickoffTime}</span>
+                        <span>{m.kickoffTime} ET</span>
                       </>
                     )}
                     {m.leagueName && (

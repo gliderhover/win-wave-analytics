@@ -20,9 +20,9 @@ const Matches = () => {
   const { isPro } = useUserTier();
   const { t } = useI18n();
   const { selectedLeague } = useLeague();
-  const [range, setRange] = useState<"today" | "7" | "30">("30");
+  const [range, setRange] = useState<"today" | "7" | "30" | "90">("90");
 
-  const daysForRange = range === "today" ? 1 : range === "7" ? 7 : 30;
+  const daysForRange = range === "today" ? 1 : range === "7" ? 7 : range === "30" ? 30 : 90;
 
   const { apiLeagueId, infoLeagueId } = useMemo(() => {
     if (selectedLeague === "all") {
@@ -73,10 +73,11 @@ const Matches = () => {
                 { key: "today", label: "Today" },
                 { key: "7", label: "Next 7 days" },
                 { key: "30", label: "Next 30 days" },
+                { key: "90", label: "Next 90 days" },
               ].map((opt) => (
                 <button
                   key={opt.key}
-                  onClick={() => setRange(opt.key as "today" | "7" | "30")}
+                  onClick={() => setRange(opt.key as "today" | "7" | "30" | "90")}
                   className={cn(
                     "px-3 py-1 rounded-full border text-[10px] font-semibold transition-all",
                     range === opt.key
@@ -107,7 +108,7 @@ const Matches = () => {
                       <span className="text-2xl">{match.flagB}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted-foreground">{match.kickoff}</span>
+                      <span className="text-xs font-mono text-muted-foreground">{match.kickoff}{match.kickoff !== "—" ? " ET" : ""}</span>
                       <div className={cn(
                         "flex items-center gap-1 text-xs font-mono font-semibold px-2 py-0.5 rounded",
                         match.signal === "bullish" && "text-signal-bullish bg-signal-bullish/10",

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { MatchData } from "@/lib/mockData";
 import { generateSuggestions, Suggestion } from "@/lib/suggestions";
+import { formatNYTimeWithET } from "@/lib/time";
 import ProGate from "@/components/ProGate";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +38,11 @@ const SuggestedBets = ({ match }: SuggestedBetsProps) => {
   const { isPro } = useUserTier();
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState(() => generateSuggestions(match));
-  const [lastUpdated, setLastUpdated] = useState(() => new Date().toLocaleTimeString());
+  const [lastUpdated, setLastUpdated] = useState(() => formatNYTimeWithET(new Date().toISOString()));
 
   const refresh = useCallback(() => {
     setSuggestions(generateSuggestions(match));
-    setLastUpdated(new Date().toLocaleTimeString());
+    setLastUpdated(formatNYTimeWithET(new Date().toISOString()));
     toast.success("Suggestions refreshed");
   }, [match]);
 
@@ -49,7 +50,7 @@ const SuggestedBets = ({ match }: SuggestedBetsProps) => {
   if (match.id !== prevMatchId) {
     setPrevMatchId(match.id);
     setSuggestions(generateSuggestions(match));
-    setLastUpdated(new Date().toLocaleTimeString());
+    setLastUpdated(formatNYTimeWithET(new Date().toISOString()));
   }
 
   const content = (

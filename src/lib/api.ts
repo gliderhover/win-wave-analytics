@@ -1,3 +1,5 @@
+import { formatNYDate, formatNYTime } from "./time";
+
 export interface UiFixture {
   id: string;
   leagueId: number | null;
@@ -91,13 +93,8 @@ export async function fetchFixtures(params: FixturesParams): Promise<FixturesRes
 
   const fixtures: UiFixture[] = (data.fixtures ?? []).map((f) => {
     const iso = f.starting_at;
-    const dt = iso ? new Date(iso) : null;
-    const kickoffDate = dt
-      ? dt.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-      : "";
-    const kickoffTime = dt
-      ? dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-      : "";
+    const kickoffDate = iso ? formatNYDate(iso) : "";
+    const kickoffTime = iso ? formatNYTime(iso) : "";
 
     return {
       id: String(f.id),

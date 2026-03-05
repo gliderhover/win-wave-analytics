@@ -26,17 +26,15 @@ export type UiFixtureLike = {
   awayTeam?: string;
 };
 
+import { formatNYDateTime } from "@/lib/time";
+
 export function toMatchContext(fixture: FixtureLike): MatchContext {
   const id = Number(fixture.id);
   const league = fixture.league;
   const leagueId = league?.id != null ? Number(league.id) : 0;
   const leagueName = league?.name ?? "";
   const startingAt = fixture.starting_at ?? "";
-  const dt = startingAt ? new Date(startingAt) : null;
-  const kickoff =
-    dt && !Number.isNaN(dt.getTime())
-      ? `${dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} • ${dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`
-      : startingAt || "—";
+  const kickoff = startingAt ? formatNYDateTime(startingAt) : "—";
   const home = fixture.home ?? {};
   const away = fixture.away ?? {};
   return {

@@ -126,7 +126,7 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
             return (
               <div key={time}>
                 <div className="text-[10px] font-mono text-muted-foreground mb-1.5">
-                  {matches[0].kickoffLocal} <span className="text-muted-foreground/60">({time} UTC)</span>
+                  {matches[0].kickoffLocal} <span className="text-muted-foreground/60">ET</span>
                 </div>
                 <div className="space-y-1.5">
                   {matches.map(m => {

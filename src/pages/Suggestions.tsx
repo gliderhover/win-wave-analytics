@@ -111,7 +111,7 @@ const Suggestions = () => {
               <div key={s.id} className="gradient-card rounded-xl border border-border p-5 group relative">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 font-mono">
                   <span>{match.flagA}</span> {match.teamA} {t("common.vs")} {match.teamB} <span>{match.flagB}</span>
-                  <span className="ml-auto">{match.kickoff}</span>
+                  <span className="ml-auto">{match.kickoff}{match.kickoff !== "—" ? " ET" : ""}</span>
                   <MatchQuickActions matchId={match.id} teamA={match.teamA} teamB={match.teamB} />
                 </div>
                 <div className="flex items-center gap-3">

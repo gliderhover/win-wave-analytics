@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { formatNYDate } from "@/lib/time";
 
 const sidebarItems = [
   { to: "/account", label: "Profile", icon: User, end: true },
@@ -93,7 +94,7 @@ const AccountLayout = () => {
             <p className="text-sm text-muted-foreground">{user.email}</p>
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
               <Calendar className="w-3 h-3" />
-              Joined {new Date(user.createdAt).toLocaleDateString()}
+              Joined {formatNYDate(user.createdAt)}
             </div>
           </div>
           <div className="flex gap-2">

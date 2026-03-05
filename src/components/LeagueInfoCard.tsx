@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getLeagueInfo, League } from "@/lib/api";
+import { formatNYDate } from "@/lib/time";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -78,17 +79,7 @@ const LeagueInfoCard = ({ leagueId, fixtureCount }: LeagueInfoCardProps) => {
     );
   }
 
-  let lastPlayedLabel = "N/A";
-  if (league.last_played_at) {
-    const dt = new Date(league.last_played_at);
-    if (!Number.isNaN(dt.getTime())) {
-      lastPlayedLabel = dt.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    }
-  }
+  const lastPlayedLabel = league.last_played_at ? formatNYDate(league.last_played_at) : "N/A";
 
   return (
     <div className="mb-4">
