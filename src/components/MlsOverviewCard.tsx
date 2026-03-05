@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
-import { getLeagueInfo, getFixtures, League } from "@/lib/api";
+import { getLeagueInfo, getFixtures, League, Fixture } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -29,7 +29,9 @@ const MlsOverviewCard = () => {
 
   const loading = leagueLoading || fixturesLoading;
   const error = leagueError || fixturesError;
-  const upcomingCount = fixtures?.length ?? 0;
+  const allFixtures: Fixture[] = fixtures ?? [];
+  const upcomingCount = allFixtures.length;
+  const visible = allFixtures.slice(0, 10);
 
   let lastPlayedLabel = "N/A";
   if (league?.last_played_at) {
@@ -104,7 +106,60 @@ const MlsOverviewCard = () => {
         <span>Last played: {lastPlayedLabel}</span>
         <span>•</span>
         <span>Upcoming matches (next 30 days): {upcomingCount}</span>
+        {import.meta.env.DEV && (
+          <>
+            <span>•</span>
+            <span>Loaded fixtures: {allFixtures.length}</span>
+          </>
+        )}
       </div>
+
+      {visible.length > 0 && (
+        <div className="mt-2 space-y-2">
+          {visible.map((m) => {
+            const dt = m.starting_at ? new Date(m.starting_at) : null;
+            const when = dt && !Number.isNaN(dt.getTime())
+              ? `${dt.toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                })} • ${dt.toLocaleTimeString(undefined, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`
+              : "";
+            const status =
+              m.state_id == null
+                ? "Upcoming"
+                : m.state_id === 1
+                ? "Scheduled"
+                : m.state_id === 2
+                ? "Live"
+                : m.state_id === 3
+                ? "Finished"
+                : "Upcoming";
+
+            return (
+              <div
+                key={m.id}
+                className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 p-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <span className="truncate">{m.home.name || "TBD"}</span>
+                    <span className="text-muted-foreground text-xs">vs</span>
+                    <span className="truncate">{m.away.name || "TBD"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground font-mono">
+                    {when && <span>{when}</span>}
+                    <span>•</span>
+                    <span>{status}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
