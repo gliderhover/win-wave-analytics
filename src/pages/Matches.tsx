@@ -25,7 +25,7 @@ const Matches = () => {
           <h1 className="text-2xl font-bold text-foreground mb-6">{t("matches.title")}</h1>
 
           <div className="mb-8">
-            <UpcomingFixtures days={30} />
+            <UpcomingFixtures days={90} maxItems={12} />
           </div>
 
           <div className="space-y-6">

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
-// Default to MLS for testing. Confirm ID via /api/leagues/search?q=mls
-const MLS_LEAGUE_ID_FOR_TESTING = "384";
+// Default to MLS (Sportmonks ID 779) for testing.
+export const DEFAULT_LEAGUE_ID = "779";
 
 interface LeagueContextType {
   selectedLeague: string; // league id or "all"
@@ -14,7 +14,7 @@ const LeagueContext = createContext<LeagueContextType>({
 });
 
 export const LeagueProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedLeague, setSelectedLeague] = useState(`sm:${MLS_LEAGUE_ID_FOR_TESTING}`);
+  const [selectedLeague, setSelectedLeague] = useState(`sm:${DEFAULT_LEAGUE_ID}`);
   return (
     <LeagueContext.Provider value={{ selectedLeague, setSelectedLeague }}>
       {children}

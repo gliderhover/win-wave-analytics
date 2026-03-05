@@ -66,6 +66,17 @@ const Navbar = () => {
     }
   }
 
+  // If MLS (779) is not returned, fall back to first available league when still on default.
+  if (hasApiLeagues && selectedApiId) {
+    const hasSelected = apiLeagues.some((l) => l.id === selectedApiId);
+    if (!hasSelected) {
+      const first = apiLeagues[0];
+      if (first) {
+        setSelectedLeague(`sm:${first.id}`);
+      }
+    }
+  }
+
   const handleLogout = () => {
     logout();
     navigate("/");

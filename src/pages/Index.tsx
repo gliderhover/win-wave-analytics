@@ -230,7 +230,7 @@ const Index = () => {
       {/* API-backed upcoming fixtures */}
       <section className="py-12 px-4 border-t border-border">
         <div className="container mx-auto max-w-4xl">
-          <UpcomingFixtures days={30} />
+          <UpcomingFixtures days={30} maxItems={12} />
         </div>
       </section>
 

@@ -37,7 +37,7 @@ function buildParamsFromLeague(selectedLeague: string, days: number) {
   return { all: true as const, days };
 }
 
-const UpcomingFixtures = ({ days = 30, maxItems = 5, className }: UpcomingFixturesProps) => {
+const UpcomingFixtures = ({ days = 30, maxItems = 10, className }: UpcomingFixturesProps) => {
   const { selectedLeague } = useLeague();
 
   const queryKey = useMemo(

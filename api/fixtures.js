@@ -1,3 +1,5 @@
+const MAX_DAYS = 100;
+
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
@@ -12,7 +14,9 @@ export default async function handler(req, res) {
     let leagueIds = leagueIdsParam
       ? leagueIdsParam.split(",").map((id) => parseInt(id, 10)).filter((n) => !Number.isNaN(n))
       : [732, 2, 8, 564, 384];
-    const days = Math.max(1, parseInt(req.query.days ?? "90", 10) || 90);
+    const parsedDays = parseInt(req.query.days ?? "30", 10);
+    const daysRequested = Number.isNaN(parsedDays) || parsedDays <= 0 ? 30 : parsedDays;
+    const days = Math.max(1, Math.min(daysRequested, MAX_DAYS));
     const rawMode = (req.query.raw ?? "").toString().toLowerCase() === "true";
     const debugUrlFlag = (req.query.debugUrl ?? "").toString().toLowerCase() === "true";
     const debugAll = (req.query.all ?? "").toString().toLowerCase() === "true";
@@ -102,6 +106,8 @@ export default async function handler(req, res) {
         startDate,
         endDate,
         leagueIds,
+        daysRequested,
+        daysUsed: days,
         apiCount,
         sample,
         count: limitedFixtures.length,
@@ -118,6 +124,8 @@ export default async function handler(req, res) {
       startDate,
       endDate,
       leagueIds,
+      daysRequested,
+      daysUsed: days,
       count: fixtures.length,
       fixtures,
     };
