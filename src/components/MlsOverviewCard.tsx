@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
+import { DEFAULT_LEAGUE_ID } from "@/contexts\LeagueContext";
 import { getLeagueInfo, getFixtures, League, Fixture } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import MatchQuickActions from "@/components/MatchQuickActions";
 
 const MlsOverviewCard = () => {
   const leagueId = DEFAULT_LEAGUE_ID;
@@ -109,7 +110,9 @@ const MlsOverviewCard = () => {
         {import.meta.env.DEV && (
           <>
             <span>•</span>
-            <span>Loaded fixtures: {allFixtures.length}</span>
+            <span>
+              Loaded fixtures: {allFixtures.length} • Showing: {visible.length}
+            </span>
           </>
         )}
       </div>
@@ -155,6 +158,11 @@ const MlsOverviewCard = () => {
                     <span>{status}</span>
                   </div>
                 </div>
+                <MatchQuickActions
+                  matchId={`fixture-${m.id}`}
+                  teamA={m.home.name || "Home"}
+                  teamB={m.away.name || "Away"}
+                />
               </div>
             );
           })}
