@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { DEFAULT_LEAGUE_ID } from "@/contexts\LeagueContext";
+import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
 import { getLeagueInfo, getFixtures, League, Fixture } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,7 @@ const MlsOverviewCard = () => {
     data: fixtures,
     isLoading: fixturesLoading,
     isError: fixturesError,
-  } = useQuery({
+  } = useQuery<Fixture[]>({
     queryKey: ["league-fixtures", leagueId, 30],
     queryFn: () => getFixtures({ leagueId, days: 30 }),
     retry: 1,
