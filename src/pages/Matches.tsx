@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import TopEdgeRibbon from "@/components/TopEdgeRibbon";
 import { mockMatches } from "@/lib/mockData";
@@ -14,6 +15,9 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 const Matches = () => {
   const { isPro } = useUserTier();
   const { t } = useI18n();
+  const [range, setRange] = useState<"today" | "7" | "30">("30");
+
+  const daysForRange = range === "today" ? 1 : range === "7" ? 7 : 30;
 
   return (
     <div className="min-h-screen bg-background">
@@ -25,7 +29,30 @@ const Matches = () => {
           <h1 className="text-2xl font-bold text-foreground mb-6">{t("matches.title")}</h1>
 
           <div className="mb-8">
-            <UpcomingFixtures days={90} maxItems={12} />
+            <div className="flex items-center gap-2 mb-3 text-[10px]">
+              <span className="text-muted-foreground font-mono uppercase tracking-wide">
+                Range
+              </span>
+              {[
+                { key: "today", label: "Today" },
+                { key: "7", label: "Next 7 days" },
+                { key: "30", label: "Next 30 days" },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setRange(opt.key as "today" | "7" | "30")}
+                  className={cn(
+                    "px-3 py-1 rounded-full border text-[10px] font-semibold transition-all",
+                    range === opt.key
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground hover:border-primary/30"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <UpcomingFixtures days={daysForRange} maxItems={12} />
           </div>
 
           <div className="space-y-6">

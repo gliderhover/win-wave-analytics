@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -66,8 +67,9 @@ const Navbar = () => {
     }
   }
 
-  // If MLS (779) is not returned, fall back to first available league when still on default.
-  if (hasApiLeagues && selectedApiId) {
+  // If current selected API league is not in the available list, fall back to the first one.
+  useEffect(() => {
+    if (!hasApiLeagues || !selectedApiId) return;
     const hasSelected = apiLeagues.some((l) => l.id === selectedApiId);
     if (!hasSelected) {
       const first = apiLeagues[0];
@@ -75,7 +77,7 @@ const Navbar = () => {
         setSelectedLeague(`sm:${first.id}`);
       }
     }
-  }
+  }, [hasApiLeagues, selectedApiId, apiLeagues, setSelectedLeague]);
 
   const handleLogout = () => {
     logout();
