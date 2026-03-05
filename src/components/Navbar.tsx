@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +7,8 @@ import { useLeague } from "@/contexts/LeagueContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/i18n/I18nContext";
 import { leagues } from "@/lib/leagueData";
-import { fetchAvailableLeagues } from "@/lib/api";
+import { fetchAvailableLeagues, getLeagueInfo } from "@/lib/api";
+import { DEFAULT_LEAGUE_ID } from "@/contexts/LeagueContext";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,6 +32,9 @@ const navLinks = [
 
 const tiers: Tier[] = ["base", "pro", "elite"];
 
+const MLS_LEAGUE_ID = DEFAULT_LEAGUE_ID;
+const MLS_LABEL_FALLBACK = "Major League Soccer";
+
 const Navbar = () => {
   const { tier, setTier, hasAccess } = useUserTier();
   const { selectedLeague, setSelectedLeague } = useLeague();
@@ -49,16 +53,34 @@ const Navbar = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  const apiLeagues = !leaguesError ? availableLeagues?.leagues ?? [] : [];
-  const hasApiLeagues = apiLeagues.length > 0;
+  const { data: mlsLeague } = useQuery({
+    queryKey: ["league-info-mls", MLS_LEAGUE_ID],
+    queryFn: () => getLeagueInfo(MLS_LEAGUE_ID),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const apiLeaguesRaw = !leaguesError ? availableLeagues?.leagues ?? [] : [];
+  const mlsLabel = mlsLeague?.name ?? MLS_LABEL_FALLBACK;
+
+  const dropdownLeagues = useMemo(() => {
+    const rest = apiLeaguesRaw
+      .filter((l) => String(l.id) !== MLS_LEAGUE_ID)
+      .map((l) => ({ id: String(l.id), name: l.name ?? "" }));
+    return [{ id: MLS_LEAGUE_ID, name: mlsLabel, isPinnedMls: true as const }, ...rest];
+  }, [apiLeaguesRaw, mlsLabel]);
+
+  const hasDropdownLeagues = dropdownLeagues.length > 0;
 
   const selectedApiId = selectedLeague.startsWith("sm:") ? selectedLeague.slice(3) : null;
 
   let currentLeague = t("nav.allLeagues");
-  if (selectedApiId && hasApiLeagues) {
-    const found = apiLeagues.find((l) => l.id === selectedApiId);
+  if (selectedApiId === MLS_LEAGUE_ID) {
+    currentLeague = mlsLabel;
+  } else if (selectedApiId && hasDropdownLeagues) {
+    const found = dropdownLeagues.find((l) => l.id === selectedApiId || String(l.id) === selectedApiId);
     if (found) {
-      currentLeague = found.name;
+      currentLeague = typeof found.name === "string" ? found.name : String(found.id);
     }
   } else if (selectedLeague !== "all") {
     const staticLeague = leagues.find((l) => l.id === selectedLeague);
@@ -67,17 +89,18 @@ const Navbar = () => {
     }
   }
 
-  // If current selected API league is not in the available list, fall back to the first one.
   useEffect(() => {
-    if (!hasApiLeagues || !selectedApiId) return;
-    const hasSelected = apiLeagues.some((l) => l.id === selectedApiId);
-    if (!hasSelected) {
-      const first = apiLeagues[0];
-      if (first) {
-        setSelectedLeague(`sm:${first.id}`);
-      }
+    if (!selectedApiId) return;
+    const idStr = String(selectedApiId);
+    const isMls = idStr === MLS_LEAGUE_ID;
+    const inList = dropdownLeagues.some((l) => String(l.id) === idStr);
+    if (inList) return;
+    if (isMls) return;
+    const first = dropdownLeagues[0];
+    if (first) {
+      setSelectedLeague(`sm:${first.id}`);
     }
-  }, [hasApiLeagues, selectedApiId, apiLeagues, setSelectedLeague]);
+  }, [selectedApiId, dropdownLeagues, setSelectedLeague]);
 
   const handleLogout = () => {
     logout();
@@ -112,34 +135,32 @@ const Navbar = () => {
                 🌍 {t("nav.allLeagues")}
               </DropdownMenuItem>
 
-              {leaguesLoading && !hasApiLeagues && (
+              {leaguesLoading && dropdownLeagues.length <= 1 && (
                 <DropdownMenuItem disabled className="text-xs text-muted-foreground">
                   ...
                 </DropdownMenuItem>
               )}
 
-              {hasApiLeagues
-                ? apiLeagues.map((l) => {
-                    const value = `sm:${l.id}`;
-                    return (
-                      <DropdownMenuItem
-                        key={l.id}
-                        onClick={() => setSelectedLeague(value)}
-                        className={cn(selectedLeague === value && "text-primary")}
-                      >
-                        {l.name}
-                      </DropdownMenuItem>
-                    );
-                  })
-                : leagues.map((l) => (
-                    <DropdownMenuItem
-                      key={l.id}
-                      onClick={() => setSelectedLeague(l.id)}
-                      className={cn(selectedLeague === l.id && "text-primary")}
-                    >
-                      {l.logo} {l.shortName}
-                    </DropdownMenuItem>
-                  ))}
+              {dropdownLeagues.map((l) => {
+                const value = `sm:${l.id}`;
+                const isPinnedMls = "isPinnedMls" in l && l.isPinnedMls;
+                return (
+                  <DropdownMenuItem
+                    key={l.id}
+                    onClick={() => setSelectedLeague(value)}
+                    className={cn(selectedLeague === value && "text-primary")}
+                  >
+                    <span className="flex items-center gap-2">
+                      {l.name}
+                      {isPinnedMls && (
+                        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border">
+                          Test
+                        </span>
+                      )}
+                    </span>
+                  </DropdownMenuItem>
+                );
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
 
