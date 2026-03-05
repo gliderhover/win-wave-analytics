@@ -13,6 +13,8 @@ export default async function handler(req, res) {
       ? leagueIdsParam.split(",").map((id) => parseInt(id, 10)).filter((n) => !Number.isNaN(n))
       : [732, 2, 8, 564, 384];
     const days = Math.max(1, parseInt(req.query.days ?? "90", 10) || 90);
+    const rawMode = (req.query.raw ?? "").toString().toLowerCase() === "true";
+    const debugUrlFlag = (req.query.debugUrl ?? "").toString().toLowerCase() === "true";
     const debugAll = (req.query.all ?? "").toString().toLowerCase() === "true";
     const includeEuropa = (req.query.includeEuropa ?? "false").toString().toLowerCase() === "true";
     if (includeEuropa && !leagueIds.includes(5)) {
@@ -29,10 +31,19 @@ export default async function handler(req, res) {
     const includeAll = "participants;league;scores";
     const includeFiltered = "participants;league;scores;round;stage";
     const include = debugAll ? includeAll : includeFiltered;
-    const base = `https://api.sportmonks.com/v3/football/fixtures/between/${startDate}/${endDate}?api_token=${token}&per_page=50&include=${encodeURIComponent(include)}`;
+
+    const baseNoToken = `https://api.sportmonks.com/v3/football/fixtures/between/${startDate}/${endDate}?per_page=50&include=${encodeURIComponent(include)}`;
+    const base = `${baseNoToken}&api_token=${token}`;
+
     const url = debugAll
       ? base
       : `${base}&filters=fixtureLeagues:${encodeURIComponent(leagueIds.join(","))}`;
+
+    const debugUrlValue = debugUrlFlag
+      ? (debugAll
+          ? baseNoToken
+          : `${baseNoToken}&filters=fixtureLeagues:${encodeURIComponent(leagueIds.join(","))}`)
+      : undefined;
 
     const r = await fetch(url);
     const raw = await r.json();
@@ -46,6 +57,7 @@ export default async function handler(req, res) {
     }
 
     const list = Array.isArray(raw?.data) ? raw.data : [];
+    const apiCount = list.length;
     const fixtures = list.map((f) => {
       const participants = f.participants ?? [];
       let home = null;
@@ -76,6 +88,29 @@ export default async function handler(req, res) {
 
     fixtures.sort((a, b) => (a.starting_at || "").localeCompare(b.starting_at || ""));
 
+    if (rawMode) {
+      const sample = list.slice(0, 5).map((f) => ({
+        id: f.id,
+        name: f.name ?? null,
+        starting_at: f.starting_at,
+      }));
+      const limitedFixtures = fixtures.slice(0, 20);
+      const payload = {
+        ok: true,
+        raw: true,
+        fetchedAt: new Date().toISOString(),
+        startDate,
+        endDate,
+        leagueIds,
+        apiCount,
+        sample,
+        count: limitedFixtures.length,
+        fixtures: limitedFixtures,
+      };
+      if (debugUrlValue) payload.debugUrl = debugUrlValue;
+      return res.status(200).json(payload);
+    }
+
     const payload = {
       ok: true,
       source: "sportmonks",
@@ -87,6 +122,7 @@ export default async function handler(req, res) {
       fixtures,
     };
     if (debugAll) payload.debugAll = true;
+    if (debugUrlValue) payload.debugUrl = debugUrlValue;
     res.status(200).json(payload);
   } catch (e) {
     res.status(500).json({ ok: false, error: String(e) });
