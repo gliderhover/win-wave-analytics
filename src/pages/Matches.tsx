@@ -1,23 +1,58 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Navbar from "@/components/Navbar";
 import TopEdgeRibbon from "@/components/TopEdgeRibbon";
 import { mockMatches } from "@/lib/mockData";
 import { useUserTier } from "@/contexts/UserTierContext";
+import { useLeague } from "@/contexts/LeagueContext";
 import { useI18n } from "@/i18n/I18nContext";
+import { useQuery } from "@tanstack/react-query";
 import ProGate from "@/components/ProGate";
 import OddsMovementChart from "@/components/dashboard/OddsMovementChart";
 import AIInsight from "@/components/dashboard/AIInsight";
 import MatchQuickActions from "@/components/MatchQuickActions";
 import UpcomingFixtures from "@/components/UpcomingFixtures";
+import LeagueInfoCard from "@/components/LeagueInfoCard";
+import { getFixtures, Fixture } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 const Matches = () => {
   const { isPro } = useUserTier();
   const { t } = useI18n();
+  const { selectedLeague } = useLeague();
   const [range, setRange] = useState<"today" | "7" | "30">("30");
 
   const daysForRange = range === "today" ? 1 : range === "7" ? 7 : 30;
+
+  const { apiLeagueId, infoLeagueId } = useMemo(() => {
+    if (selectedLeague === "all") {
+      return { apiLeagueId: null, infoLeagueId: "ALL" as const };
+    }
+    if (selectedLeague.startsWith("sm:")) {
+      const idStr = selectedLeague.slice(3);
+      const n = Number.parseInt(idStr, 10);
+      return {
+        apiLeagueId: idStr,
+        infoLeagueId: Number.isNaN(n) ? ("ALL" as const) : n,
+      };
+    }
+    // Static fallback leagues don't have a Sportmonks ID; treat as ALL for info.
+    return { apiLeagueId: null, infoLeagueId: "ALL" as const };
+  }, [selectedLeague]);
+
+  const {
+    data: fixtures,
+  } = useQuery<Fixture[]>({
+    queryKey: ["matches-league-fixtures", apiLeagueId, daysForRange],
+    queryFn: () =>
+      apiLeagueId
+        ? getFixtures({ leagueId: apiLeagueId, days: daysForRange })
+        : Promise.resolve([]),
+    enabled: !!apiLeagueId,
+    retry: 1,
+  });
+
+  const fixtureCount = fixtures?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,6 +64,7 @@ const Matches = () => {
           <h1 className="text-2xl font-bold text-foreground mb-6">{t("matches.title")}</h1>
 
           <div className="mb-8">
+            <LeagueInfoCard leagueId={infoLeagueId} fixtureCount={fixtureCount} />
             <div className="flex items-center gap-2 mb-3 text-[10px]">
               <span className="text-muted-foreground font-mono uppercase tracking-wide">
                 Range
