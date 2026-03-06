@@ -1,10 +1,7 @@
 import { useState, useMemo } from "react";
-import { ScheduleMatch } from "@/lib/scheduleData";
-import { mockMatches } from "@/lib/mockData";
+import { useQuery } from "@tanstack/react-query";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { useLeague } from "@/contexts/LeagueContext";
-import { getAllMatches, filterByLeague } from "@/lib/multiLeagueData";
-import { leagues } from "@/lib/leagueData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { Lock, Eye, Bell, Calendar, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { fetchFixtures, UiFixture } from "@/lib/api";
+import { formatNYTimeWithET } from "@/lib/time";
 
 interface GameSchedulePanelProps {
   onSelectMatch: (matchId: string) => void;
@@ -29,30 +28,63 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<string>("Soonest");
 
+  const daysForRange =
+    day === "Today" ? 1 :
+    day === "Tomorrow" ? 2 :
+    7;
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["dashboard-schedule-fixtures", selectedLeague, daysForRange],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("days", String(daysForRange));
+      if (selectedLeague === "all") {
+        searchParams.set("all", "true");
+      } else if (selectedLeague.startsWith("sm:")) {
+        searchParams.set("leagueIds", selectedLeague.slice(3));
+      } else {
+        searchParams.set("all", "true");
+      }
+      return fetchFixtures({ leagueIds: searchParams.get("leagueIds") ?? undefined, all: searchParams.get("all") === "true", days: daysForRange });
+    },
+    retry: 1,
+  });
+
   const upcoming = useMemo(() => {
-    let list = filterByLeague(getAllMatches(), selectedLeague).filter(m => m.status === "UPCOMING");
-    if (day !== "This Week") list = list.filter(m => m.kickoffDate === day);
+    let list: UiFixture[] = data?.fixtures ?? [];
+
+    if (day === "Today" || day === "Tomorrow") {
+      const now = new Date();
+      const target = new Date(now);
+      if (day === "Tomorrow") {
+        target.setUTCDate(target.getUTCDate() + 1);
+      }
+      const targetStr = target.toISOString().slice(0, 10);
+      list = list.filter((f) => (f.kickoffIso ?? "").slice(0, 10) === targetStr);
+    }
+
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(m => m.teamHome.toLowerCase().includes(q) || m.teamAway.toLowerCase().includes(q));
+      list = list.filter(
+        (m) =>
+          m.homeTeam.toLowerCase().includes(q) ||
+          m.awayTeam.toLowerCase().includes(q)
+      );
     }
-    // Sort
-    if (sortBy === "Highest Edge") list.sort((a, b) => b.edge - a.edge);
-    else if (sortBy === "Most Movement") {
-      list.sort((a, b) => {
-        const movA = Math.abs(a.marketImplied.home - a.openMarketImplied.home);
-        const movB = Math.abs(b.marketImplied.home - b.openMarketImplied.home);
-        return movB - movA;
-      });
-    }
-    return list;
-  }, [day, selectedLeague, search, sortBy]);
 
-  // Group by kickoff time
+    // Sort by soonest
+    list = [...list].sort((a, b) =>
+      (a.kickoffIso || "").localeCompare(b.kickoffIso || "")
+    );
+
+    return list;
+  }, [data?.fixtures, day, search, sortBy]);
+
+  // Group by kickoff time label
   const grouped = useMemo(() => {
-    const map = new Map<string, ScheduleMatch[]>();
+    const map = new Map<string, UiFixture[]>();
     for (const m of upcoming) {
-      const key = m.kickoffUtc;
+      const key = m.kickoffTime || m.kickoffDate || "";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(m);
     }
@@ -62,16 +94,9 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
   const visibleLimit = isPro ? Infinity : 3;
   let runningCount = 0;
 
-  const handleSelect = (m: ScheduleMatch) => {
-    if (m.linkedMatchId) {
-      const match = mockMatches.find(mm => mm.id === m.linkedMatchId);
-      if (match) {
-        onSelectMatch(match.id);
-        document.getElementById("match-detail")?.scrollIntoView({ behavior: "smooth" });
-        return;
-      }
-    }
-    toast.info(`${m.teamHome} vs ${m.teamAway} selected`);
+  const handleSelect = (m: UiFixture) => {
+    onSelectMatch(m.id);
+    navigate(`/match/${m.id}`);
   };
 
   return (
@@ -115,7 +140,16 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
         ))}
       </div>
 
-      {grouped.length === 0 ? (
+      {isError ? (
+        <div className="text-center py-8 flex-1 flex flex-col items-center justify-center">
+          <p className="text-sm text-muted-foreground mb-1">Could not load schedule.</p>
+          <p className="text-xs text-muted-foreground">Please try again in a moment.</p>
+        </div>
+      ) : isLoading ? (
+        <div className="text-center py-8 flex-1 flex flex-col items-center justify-center">
+          <p className="text-sm text-muted-foreground mb-1">Loading schedule…</p>
+        </div>
+      ) : grouped.length === 0 ? (
         <div className="text-center py-8 flex-1 flex flex-col items-center justify-center">
           <p className="text-sm text-muted-foreground mb-1">No matches scheduled</p>
           <p className="text-xs text-muted-foreground">Try changing the filter above</p>
@@ -126,7 +160,7 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
             return (
               <div key={time}>
                 <div className="text-[10px] font-mono text-muted-foreground mb-1.5">
-                  {matches[0].kickoffLocal} <span className="text-muted-foreground/60">ET</span>
+                  {formatNYTimeWithET(matches[0].kickoffIso)}
                 </div>
                 <div className="space-y-1.5">
                   {matches.map(m => {
@@ -143,31 +177,20 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
                         <div className="flex items-center gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                              <span>{m.flagHome}</span>
-                              <span className="truncate">{m.teamHome}</span>
+                              <span className="truncate">{m.homeTeam}</span>
                               <span className="text-muted-foreground text-xs">vs</span>
-                              <span className="truncate">{m.teamAway}</span>
-                              <span>{m.flagAway}</span>
+                              <span className="truncate">{m.awayTeam}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-[9px] text-muted-foreground font-mono">
-                              <Badge variant="outline" className="text-[8px] h-4 px-1">{m.league}</Badge>
-                              <span>Open: {m.openMarketImplied.home}%</span>
-                              <span>→</span>
-                              <span>Now: {m.marketImplied.home}%</span>
+                              <Badge variant="outline" className="text-[8px] h-4 px-1">{m.leagueName}</Badge>
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1.5 shrink-0">
-                            {m.edge >= 4 && (
-                              <Badge variant="outline" className="text-[9px] font-mono bg-signal-bullish/15 text-signal-bullish border-signal-bullish/30">
-                                +{m.edge.toFixed(1)}% Edge
-                              </Badge>
-                            )}
                             <div className="flex gap-1">
                               <Button variant="outline" size="sm" className="text-[10px] h-6 px-2" onClick={() => {
-                                handleSelect(m);
-                                toast.success(`${m.teamHome} vs ${m.teamAway} added to watchlist`);
+                                handleSelect(m as any);
                               }}>
-                                <Eye className="w-3 h-3 mr-0.5" /> Watch
+                                <Eye className="w-3 h-3 mr-0.5" /> Open
                               </Button>
                               {isPro && (
                                 <Button variant="outline" size="sm" className="text-[10px] h-6 px-2" onClick={() => toast.success(`Notification set for ${m.teamHome} vs ${m.teamAway}`)}>
