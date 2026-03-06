@@ -65,6 +65,19 @@ const Dashboard = () => {
     );
   }, [featuredData?.fixtures]);
 
+  const { data: probData } = useQuery({
+    queryKey: ["model-probability", selectedFixtureId],
+    queryFn: async () => {
+      const res = await fetch(`/api/sports?type=model_probability&fixtureId=${encodeURIComponent(selectedFixtureId!)}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error("Failed to fetch probability");
+      return json as { home: number; draw: number; away: number };
+    },
+    enabled: !!selectedFixtureId,
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+
   const { data: liveData } = useQuery({
     queryKey: ["dashboard-live-fixtures", selectedLeague],
     queryFn: async () => {
@@ -105,14 +118,19 @@ const Dashboard = () => {
   const selectedMatch = useMemo(() => {
     if (!selectedFixture) return null;
     const base = mockMatches[0];
+    const teamA = selectedFixture.homeTeam || "Home";
+    const teamB = selectedFixture.awayTeam || "Away";
     return {
       ...base,
       id: selectedFixture.id,
-      teamA: selectedFixture.homeTeam || "Home",
-      teamB: selectedFixture.awayTeam || "Away",
+      teamA,
+      teamB,
       kickoff: formatNYDateTimeWithET(selectedFixture.kickoffIso),
+      modelProbA: probData?.home ?? base.modelProbA,
+      modelProbDraw: probData?.draw ?? base.modelProbDraw,
+      modelProbB: probData?.away ?? base.modelProbB,
     };
-  }, [selectedFixture]);
+  }, [selectedFixture, probData]);
 
   const matchContext = selectedFixture ? toMatchContextFromUiFixture(selectedFixture) : null;
 

@@ -38,7 +38,8 @@ const AIInsight = ({ match, fixtureId }: AIInsightProps) => {
     retry: 1,
   });
 
-  const fallbackText = match?.aiInsight ?? "Insight unavailable.";
+  // Never use mock match data when we're fetching for a real fixture — only use API response
+  const fallbackText = effectiveId != null ? "Insight unavailable." : (match?.aiInsight ?? "Insight unavailable.");
   const aiInsight = data?.aiInsight?.trim() || fallbackText;
   const keyFactors = data?.keyFactors ?? [];
   const riskLevel = data?.riskLevel ?? "MEDIUM";
