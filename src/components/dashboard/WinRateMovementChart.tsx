@@ -11,23 +11,23 @@ interface WinRateMovementChartProps {
 }
 
 const fetchProbability = async (fixtureId: string) => {
-  const res = await fetch(`/api/model/probability?fixtureId=${encodeURIComponent(fixtureId)}`);
+  const res = await fetch(`/api/sports?type=model_probability&fixtureId=${encodeURIComponent(fixtureId)}`);
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || "Failed to fetch probability");
   return json;
 };
 
 const postSnapshot = async (fixtureId: string, home: number, draw: number, away: number) => {
-  await fetch("/api/model/probability/snapshot", {
+  await fetch("/api/sports?type=model_probability_snapshot", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ fixtureId, home, draw, away }),
+    body: JSON.stringify({ type: "model_probability_snapshot", fixtureId, home, draw, away }),
   });
 };
 
 const fetchMovement = async (fixtureId: string, minutes: number) => {
   const res = await fetch(
-    `/api/model/probability/movement?fixtureId=${encodeURIComponent(fixtureId)}&minutes=${minutes}`
+    `/api/sports?type=model_probability_movement&fixtureId=${encodeURIComponent(fixtureId)}&minutes=${minutes}`
   );
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || "Failed to fetch movement");

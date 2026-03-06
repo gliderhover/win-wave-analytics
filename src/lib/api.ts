@@ -68,7 +68,7 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export async function fetchFixtures(params: FixturesParams): Promise<FixturesResponse> {
-  const search = new URLSearchParams();
+  const search = new URLSearchParams({ type: "fixtures" });
   const days = params.days ?? 30;
   search.set("days", String(days));
   if (params.all) {
@@ -89,7 +89,7 @@ export async function fetchFixtures(params: FixturesParams): Promise<FixturesRes
       home: { id: number; name: string } | null;
       away: { id: number; name: string } | null;
     }[];
-  }>(`/api/fixtures?${search.toString()}`);
+  }>(`/api/sports?${search.toString()}`);
 
   const fixtures: UiFixture[] = (data.fixtures ?? []).map((f) => {
     const iso = f.starting_at;
@@ -116,10 +116,10 @@ export async function fetchFixtures(params: FixturesParams): Promise<FixturesRes
 
 export async function fetchAvailableLeagues(params: { days?: number } = {}): Promise<AvailableLeaguesResponse> {
   const days = params.days ?? 90;
-  const search = new URLSearchParams({ days: String(days) });
+  const search = new URLSearchParams({ type: "leagues_available", days: String(days) });
   const data = await fetchJson<{
     leagues: { id: number; name: string; countUpcoming: number }[];
-  }>(`/api/leagues/available?${search.toString()}`);
+  }>(`/api/sports?${search.toString()}`);
 
   const leagues: UiLeagueOption[] = (data.leagues ?? []).map((l) => ({
     id: String(l.id),
@@ -132,10 +132,10 @@ export async function fetchAvailableLeagues(params: { days?: number } = {}): Pro
 // New helpers for league/fixtures flows
 
 export async function getAvailableLeagues(days = 90): Promise<League[]> {
-  const search = new URLSearchParams({ days: String(days) });
+  const search = new URLSearchParams({ type: "leagues_available", days: String(days) });
   const data = await fetchJson<{
     leagues: { id: number; name: string; countUpcoming: number }[];
-  }>(`/api/leagues/available?${search.toString()}`);
+  }>(`/api/sports?${search.toString()}`);
 
   return (data.leagues ?? []).map((l) => ({
     id: String(l.id),
@@ -144,7 +144,7 @@ export async function getAvailableLeagues(days = 90): Promise<League[]> {
 }
 
 export async function getFixtures(params: { leagueId: string; days?: number }): Promise<Fixture[]> {
-  const search = new URLSearchParams();
+  const search = new URLSearchParams({ type: "fixtures" });
   search.set("leagueIds", params.leagueId);
   search.set("days", String(params.days ?? 30));
 
@@ -159,7 +159,7 @@ export async function getFixtures(params: { leagueId: string; days?: number }): 
       home: { id: number; name: string } | null;
       away: { id: number; name: string } | null;
     }[];
-  }>(`/api/fixtures?${search.toString()}`);
+  }>(`/api/sports?${search.toString()}`);
 
   if (!data.ok) {
     throw new Error("Failed to load fixtures");
@@ -185,7 +185,7 @@ export async function getFixtures(params: { leagueId: string; days?: number }): 
 }
 
 export async function getLeagueInfo(leagueId: string): Promise<League> {
-  const search = new URLSearchParams({ id: leagueId });
+  const search = new URLSearchParams({ type: "league", id: leagueId });
   const data = await fetchJson<{
     ok: boolean;
     league: {
@@ -197,7 +197,7 @@ export async function getLeagueInfo(leagueId: string): Promise<League> {
       active?: boolean;
       last_played_at?: string | null;
     } | null;
-  }>(`/api/league?${search.toString()}`);
+  }>(`/api/sports?${search.toString()}`);
 
   if (!data.ok || !data.league) {
     throw new Error("Failed to load league info");
@@ -224,7 +224,7 @@ export interface SingleFixtureResponse {
 }
 
 export async function getFixture(fixtureId: string): Promise<SingleFixtureResponse> {
-  const search = new URLSearchParams({ id: fixtureId });
+  const search = new URLSearchParams({ type: "fixture", id: fixtureId });
   const data = await fetchJson<{
     ok: boolean;
     fixture: {
@@ -235,7 +235,7 @@ export async function getFixture(fixtureId: string): Promise<SingleFixtureRespon
       home: { id: number; name: string } | null;
       away: { id: number; name: string } | null;
     };
-  }>(`/api/fixture?${search.toString()}`);
+  }>(`/api/sports?${search.toString()}`);
 
   if (!data.ok || !data.fixture) {
     throw new Error("Failed to load fixture");

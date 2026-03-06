@@ -17,10 +17,10 @@ const AIInsight = ({ match, fixtureId }: AIInsightProps) => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["ai-insight", effectiveId],
     queryFn: async () => {
-      const res = await fetch("/api/ai/insight", {
+      const res = await fetch("/api/sports?type=ai_insight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fixtureId: effectiveId }),
+        body: JSON.stringify({ type: "ai_insight", fixtureId: effectiveId }),
       });
       const json = await res.json();
       if (!json.ok) {

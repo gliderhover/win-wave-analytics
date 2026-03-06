@@ -46,12 +46,12 @@ const LiveGamesPanel = ({ onSelectMatch }: LiveGamesPanelProps) => {
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["live-fixtures", selectedLeague],
     queryFn: async () => {
-      const search = new URLSearchParams();
+      const search = new URLSearchParams({ type: "live" });
       if (selectedLeague !== "all" && selectedLeague.startsWith("sm:")) {
         search.set("leagueIds", selectedLeague.slice(3));
       }
       search.set("minutes", "30");
-      const res = await fetch(`/api/live?${search.toString()}`);
+      const res = await fetch(`/api/sports?${search.toString()}`);
       const json = await res.json();
       if (!json.ok) throw new Error("Failed to load live fixtures");
       return (json.fixtures ?? []) as LiveApiFixture[];

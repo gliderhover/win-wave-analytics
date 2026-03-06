@@ -62,15 +62,26 @@ This project is built with:
 
 ## API (Vercel Serverless)
 
-The app exposes Vercel serverless functions under `/api`. All run in Node.js and use the `(req, res)` signature.
+All endpoints are consolidated into **one** serverless function: `GET/POST /api/sports?type=...` — stays under Vercel Hobby limit (12 functions).
 
-**Required env (set in Vercel):** `SPORTMONKS_API_TOKEN` — never expose this on the frontend.
+**Required env (set in Vercel):** `SPORTMONKS_API_TOKEN`, `AI_insight` (OpenAI). Tokens are never returned in responses.
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/health` | Health check; returns `ok`, `sportmonksKeyPresent`, `timestamp`. |
-| `GET /api/fixtures` | Upcoming fixtures from Sportmonks. Query: `leagueIds` (comma-separated, default `732,2,8,564,384`), `days` (default `30`), `includeEuropa` (`true`/`false`, default `false`). Example: `GET /api/fixtures?leagueIds=8,2&days=14&includeEuropa=true` |
-| `GET /api/leagues/top` | Static list of top leagues (World Cup, UCL, Premier League, La Liga, Serie A, Europa League). |
+| type | Method | Description |
+|------|--------|-------------|
+| `health` | GET | Health check; returns `ok`, `sportmonksKeyPresent`, `timestamp`. |
+| `fixtures` | GET | Upcoming fixtures. Params: `leagueIds`, `days` (cap 100), `all`, `raw`, `debugUrl`, `includeEuropa`. |
+| `live` | GET | Live in-play fixtures. Params: `leagueIds`, `minutes`. |
+| `fixture` | GET | Single fixture. Params: `id`. |
+| `league` | GET | League info. Params: `id`. |
+| `leagues_available` | GET | Leagues with upcoming fixtures. Params: `days`. |
+| `leagues_top` | GET | Static top leagues list. |
+| `leagues_search` | GET | Search leagues. Params: `q`. |
+| `fixtures_season` | GET | Fixtures by season. Params: `seasonId`. |
+| `seasons` | GET | Seasons by leagues. Params: `leagueIds`. |
+| `ai_insight` | POST | AI match insight. Body: `{ fixtureId }`. |
+| `model_probability` | GET | Win-rate model. Params: `fixtureId`. |
+| `model_probability_snapshot` | POST | Save snapshot. Body: `{ fixtureId, home, draw, away, ts? }`. |
+| `model_probability_movement` | GET | Snapshot history. Params: `fixtureId`, `minutes`. |
 
 ## How can I deploy this project?
 

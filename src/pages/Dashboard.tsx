@@ -72,7 +72,8 @@ const Dashboard = () => {
       if (selectedLeague !== "all" && selectedLeague.startsWith("sm:")) {
         search.set("leagueIds", selectedLeague.slice(3));
       }
-      const res = await fetch(`/api/live?${search.toString()}`);
+      search.set("type", "live");
+      const res = await fetch(`/api/sports?${search.toString()}`);
       const json = await res.json();
       if (!json.ok) {
         throw new Error("Failed to load live fixtures");
