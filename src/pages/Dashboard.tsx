@@ -13,7 +13,7 @@ import SmartMoneyDashboard from "@/components/dashboard/SmartMoneyDashboard";
 import LiveProbabilityPanel from "@/components/dashboard/LiveProbabilityPanel";
 import AlertsCenter from "@/components/dashboard/AlertsCenter";
 import BankrollManager from "@/components/dashboard/BankrollManager";
-import OddsMovementChart from "@/components/dashboard/OddsMovementChart";
+import WinRateMovementChart from "@/components/dashboard/WinRateMovementChart";
 import AIInsight from "@/components/dashboard/AIInsight";
 import SuggestedBets from "@/components/dashboard/SuggestedBets";
 import LiveGamesPanel from "@/components/dashboard/LiveGamesPanel";
@@ -258,7 +258,17 @@ const Dashboard = () => {
             <div className="lg:col-span-2 space-y-6">
               {selectedMatch && (
                 <>
-                  <OddsMovementChart match={selectedMatch} full={isPro} />
+                  <WinRateMovementChart
+                    fixtureId={selectedFixtureId}
+                    teamA={selectedMatch.teamA}
+                    teamB={selectedMatch.teamB}
+                    isLive={
+                      !!(liveData ?? []).some(
+                        (f) => String(f.id) === selectedFixtureId
+                      )
+                    }
+                    full={isPro}
+                  />
                   <AIInsight match={selectedMatch} fixtureId={matchContext?.id} />
                   <SuggestedBets match={selectedMatch} />
                   <EdgeEnginePanel match={selectedMatch} />

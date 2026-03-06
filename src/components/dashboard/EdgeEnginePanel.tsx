@@ -41,7 +41,7 @@ const EdgeEnginePanel = ({ match }: { match: MatchData }) => {
               <div className="font-mono text-lg font-bold text-muted-foreground">{match.marketProbA}%</div>
             </div>
           </TooltipTrigger>
-          <TooltipContent>Probability implied by current sportsbook odds</TooltipContent>
+          <TooltipContent>Market-implied probability</TooltipContent>
         </Tooltip>
 
         <Tooltip>

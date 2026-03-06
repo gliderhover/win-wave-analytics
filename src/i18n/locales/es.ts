@@ -110,7 +110,7 @@ const es: Record<string, string> = {
   "feature.aiPredictorDesc": "Modelos de aprendizaje profundo entrenados con más de 20 años de datos de fútbol, actualizados en tiempo real.",
   "feature.accuracy": "precisión",
   "feature.liveOdds": "Rastreador de cuotas en vivo",
-  "feature.liveOddsDesc": "Monitorea cambios de probabilidad en más de 40 casas de apuestas. Detecta valor antes de que el mercado corrija.",
+  "feature.liveOddsDesc": "Monitorea cambios de probabilidad en los mercados. Detecta valor antes de que el mercado corrija.",
   "feature.updateLatency": "latencia",
   "feature.smartMoney": "Alertas de dinero inteligente",
   "feature.smartMoneyDesc": "Sabe dónde apuestan los expertos. Notificaciones instantáneas de movimientos de líneas.",

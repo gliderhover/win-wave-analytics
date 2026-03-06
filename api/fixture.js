@@ -44,6 +44,12 @@ export default async function handler(req, res) {
       away = { id: participants[1].id, name: participants[1].name ?? participants[1].short_code ?? "" };
     }
     const league = f.league ?? {};
+    const scoresRaw = Array.isArray(f.scores) ? f.scores : [];
+    const liveScore = scoresRaw.find((s) => s.score_type === "live") || scoresRaw.find((s) => s.score_type === "current") || scoresRaw[0];
+    const scores = liveScore
+      ? { home: liveScore.home_score ?? null, away: liveScore.away_score ?? null, description: liveScore.description ?? null }
+      : null;
+
     const fixture = {
       id: f.id,
       starting_at: f.starting_at,
@@ -55,6 +61,7 @@ export default async function handler(req, res) {
       },
       home,
       away,
+      scores,
     };
 
     res.status(200).json({

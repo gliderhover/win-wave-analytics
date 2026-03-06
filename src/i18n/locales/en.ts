@@ -111,7 +111,7 @@ const en = {
   "feature.aiPredictorDesc": "Deep learning models trained on 20+ years of football data across all major leagues, updated in real-time.",
   "feature.accuracy": "accuracy",
   "feature.liveOdds": "Live Odds Tracker",
-  "feature.liveOddsDesc": "Monitor probability shifts across 40+ sportsbooks. Spot value before the market corrects.",
+  "feature.liveOddsDesc": "Monitor probability shifts across markets. Spot value before the market corrects.",
   "feature.updateLatency": "update latency",
   "feature.smartMoney": "Smart Money Alerts",
   "feature.smartMoneyDesc": "Know where sharp bettors are placing their money. Instant push notifications for line movements.",

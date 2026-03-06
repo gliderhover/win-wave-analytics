@@ -47,7 +47,7 @@ const SmartMoneyDashboard = ({ match }: { match: MatchData }) => {
             <TooltipTrigger asChild>
               <span className="text-xs text-muted-foreground cursor-help">Steam Move</span>
             </TooltipTrigger>
-            <TooltipContent>Rapid line movement across multiple sportsbooks simultaneously</TooltipContent>
+            <TooltipContent>Rapid line movement across multiple markets</TooltipContent>
           </Tooltip>
           <span className={cn("text-xs font-mono font-bold px-2 py-0.5 rounded", match.steamDetected ? "text-signal-bearish bg-signal-bearish/10" : "text-muted-foreground bg-secondary")}>
             {match.steamDetected ? "⚡ DETECTED" : "NONE"}
@@ -60,7 +60,7 @@ const SmartMoneyDashboard = ({ match }: { match: MatchData }) => {
             <TooltipTrigger asChild>
               <span className="text-xs text-muted-foreground cursor-help">Market Divergence</span>
             </TooltipTrigger>
-            <TooltipContent>Gap between sharp and recreational sportsbook pricing</TooltipContent>
+            <TooltipContent>Gap between sharp and recreational market pricing</TooltipContent>
           </Tooltip>
           <div className="flex items-center gap-1">
             {Math.abs(match.edgeA) > 3 ? (
