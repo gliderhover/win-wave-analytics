@@ -9,10 +9,10 @@ type AIInsightProps = {
 const AIInsight = ({ match, fixtureId }: AIInsightProps) => {
   const effectiveId =
     fixtureId != null
-      ? Number(fixtureId)
+      ? String(fixtureId)
       : match
-      ? Number(match.id)
-      : null;
+        ? String(match.id)
+        : null;
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["ai-insight", effectiveId],
@@ -27,6 +27,7 @@ const AIInsight = ({ match, fixtureId }: AIInsightProps) => {
         throw new Error("Failed to load AI insight");
       }
       return json as {
+        fixtureId?: string | number;
         aiInsight: string;
         keyFactors?: string[];
         riskLevel?: "LOW" | "MEDIUM" | "HIGH";

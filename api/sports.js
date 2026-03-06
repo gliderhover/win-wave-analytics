@@ -64,7 +64,7 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
 
   const token = process.env.SPORTMONKS_API_TOKEN;
-  const aiKey = process.env.AI_insight;
+  const aiKey = process.env.AI_insight || process.env.OPENAI_API_KEY;
 
   const isPost = req.method === "POST";
   const q = req.query || {};
@@ -293,15 +293,55 @@ export default async function handler(req, res) {
       case "ai_insight": {
         res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
         if (req.method !== "POST") return res.status(405).setHeader("Allow", "POST").json({ ok: false, error: "Method not allowed" });
-        if (!aiKey) return send({ ok: false, error: "Missing AI_insight key" }, 500);
-        const fixtureId = Number(body.fixtureId);
-        if (!fixtureId || Number.isNaN(fixtureId)) return send({ ok: false, error: "Invalid or missing fixtureId" }, 400);
-        if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
+        const fixtureIdRaw = (body.fixtureId ?? "").toString().trim();
+        if (!fixtureIdRaw) return send({ ok: false, error: "Invalid or missing fixtureId" }, 400);
 
-        const f = await fetchFixtureDirect(token, String(fixtureId));
-        if (!f) return send({ ok: false, error: "Failed to load fixture for insight" }, 500);
+        // Best-effort match context. If SPORTMONKS_API_TOKEN is missing, we still return a usable response.
+        let matchContext = { id: fixtureIdRaw };
+        if (token) {
+          const f = await fetchFixtureDirect(token, fixtureIdRaw);
+          if (f) {
+            matchContext = {
+              id: String(f.id),
+              leagueName: f.league?.name ?? "",
+              leagueId: f.league?.id ?? null,
+              starting_at: f.starting_at,
+              home: f.home,
+              away: f.away,
+              state_id: f.state_id ?? null,
+              scores: f.scores ?? null,
+            };
+          }
+        }
 
-        const matchContext = { id: f.id, leagueName: f.league?.name ?? "", leagueId: f.league?.id ?? null, starting_at: f.starting_at, home: f.home, away: f.away, state_id: f.state_id ?? null };
+        // If no OpenAI key is configured, provide a deterministic fallback so the Dashboard still works.
+        if (!aiKey) {
+          const homeName = matchContext.home?.name ?? "Home";
+          const awayName = matchContext.away?.name ?? "Away";
+          const score = matchContext.scores ? `${matchContext.scores.home ?? 0}-${matchContext.scores.away ?? 0}` : null;
+          const state = matchContext.state_id === 2 ? "LIVE" : matchContext.state_id === 3 ? "FINISHED" : "SCHEDULED";
+          const aiInsight =
+            state === "LIVE"
+              ? `Live match: ${homeName} vs ${awayName} (${score ?? "score n/a"}). Momentum and game state can swing quickly — treat any edge as short-lived.`
+              : state === "FINISHED"
+                ? `Final: ${homeName} vs ${awayName}${score ? ` (${score})` : ""}. Use the post-match stats and events to evaluate whether the result matches expectations.`
+                : `Upcoming: ${homeName} vs ${awayName}. Early information (lineups, injuries, travel, rest) tends to move confidence most.`;
+
+          return send({
+            ok: true,
+            fixtureId: fixtureIdRaw,
+            aiInsight,
+            keyFactors: [
+              "Game state (scheduled/live/final)",
+              "Scoreline and time remaining (if live)",
+              "Lineups/injuries and schedule congestion",
+            ],
+            riskLevel: state === "LIVE" ? "HIGH" : "MEDIUM",
+            confidence: state === "FINISHED" ? 90 : 55,
+            fallback: true,
+          });
+        }
+
         const prompt = `You are an objective football analytics assistant.
 Given the match context (JSON) below, write:
 1) A concise 2-4 sentence insight about how this match might play out.
@@ -364,7 +404,7 @@ ${JSON.stringify(matchContext, null, 2)}
         const keyFactors = Array.isArray(parsed.keyFactors) ? parsed.keyFactors.map(String) : [];
         const riskLevel = ["LOW", "MEDIUM", "HIGH"].includes(parsed.riskLevel) ? parsed.riskLevel : "MEDIUM";
         const confidence = Number(parsed.confidence ?? 50);
-        return send({ ok: true, fixtureId, aiInsight, keyFactors, riskLevel, confidence });
+        return send({ ok: true, fixtureId: fixtureIdRaw, aiInsight, keyFactors, riskLevel, confidence });
       }
 
       case "model_probability": {
