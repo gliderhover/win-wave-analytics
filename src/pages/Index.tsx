@@ -42,7 +42,13 @@ const Index = () => {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["homepage-featured-fixtures", HOMEPAGE_FEATURED_8_IDS_STR],
-    queryFn: () => fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 30 }),
+    queryFn: async () => {
+      const res14 = await fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 14 });
+      if (res14.fixtures.length === 0) {
+        return fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 30 });
+      }
+      return res14;
+    },
     staleTime: 2 * 60 * 1000,
     retry: 1,
   });
@@ -154,12 +160,12 @@ const Index = () => {
       {/* League chips — supported leagues only */}
       <section className="py-10 px-4">
         <div className="container mx-auto max-w-4xl">
-          <div className="flex flex-nowrap justify-center gap-2 overflow-x-auto pb-1">
+          <div className="flex flex-wrap justify-center gap-3">
             <button
               type="button"
               onClick={() => setSelectedLeague("all")}
               className={cn(
-                "shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
+                "flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
                 selectedLeague === "all"
                   ? "border-primary bg-primary/10 text-foreground"
                   : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
@@ -176,7 +182,7 @@ const Index = () => {
                   type="button"
                   onClick={() => setSelectedLeague(value)}
                   className={cn(
-                    "shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
+                    "flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all",
                     isSelected
                       ? "border-primary bg-primary/10 text-foreground"
                       : "border-border bg-secondary/30 text-muted-foreground hover:border-primary/40 hover:text-foreground"
