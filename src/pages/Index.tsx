@@ -18,10 +18,44 @@ import {
   getLeagueNameById,
 } from "@/constants/leagueGroups";
 import { toMatchContextFromUiFixture } from "@/types/match";
-import { MATCHES_PER_LEAGUE } from "@/components/FeaturedAndUpcomingLeagues";
 import type { FeaturedNowItem, UpcomingSoonItem } from "@/components/FeaturedAndUpcomingLeagues";
 
 const TOP_UPCOMING_MAX = 12;
+const MLS_LEAGUE_ID = 779;
+const MATCHES_MLS = 10;
+const MATCHES_OTHER = 3;
+
+function parseUtc(startingAt: string | null | undefined): Date | null {
+  if (!startingAt) return null;
+  const s = String(startingAt).trim();
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+    return new Date(s.replace(" ", "T") + "Z");
+  }
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function isWithin14Days(date: Date): boolean {
+  const now = new Date();
+  const end = new Date(now);
+  end.setUTCDate(end.getUTCDate() + 14);
+  return date >= now && date <= end;
+}
+
+function getDisplayFixtures(fixtures: UiFixture[], leagueId: number): UiFixture[] {
+  const now = new Date();
+  const sorted = [...fixtures].sort((a, b) => {
+    const da = parseUtc(a.kickoffIso)?.getTime() ?? 0;
+    const db = parseUtc(b.kickoffIso)?.getTime() ?? 0;
+    return da - db;
+  });
+  const upcoming14 = sorted.filter((f) => {
+    const d = parseUtc(f.kickoffIso);
+    return d && isWithin14Days(d);
+  });
+  const n = leagueId === MLS_LEAGUE_ID ? MATCHES_MLS : MATCHES_OTHER;
+  return upcoming14.length > 0 ? upcoming14.slice(0, n) : sorted.slice(0, n);
+}
 
 function groupByLeagueId(fixtures: UiFixture[]): Map<number, UiFixture[]> {
   const map = new Map<number, UiFixture[]>();
@@ -40,15 +74,20 @@ const Index = () => {
   const { setSelectedLeague, selectedLeague } = useLeague();
   const { t } = useI18n();
 
+  const fetchParams = useMemo(() => {
+    if (selectedLeague === "all") {
+      return { leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 30 as const };
+    }
+    if (selectedLeague.startsWith("sm:")) {
+      const id = selectedLeague.slice(3);
+      return { leagueIds: id, days: 30 as const };
+    }
+    return { leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 30 as const };
+  }, [selectedLeague]);
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["homepage-featured-fixtures", HOMEPAGE_FEATURED_8_IDS_STR],
-    queryFn: async () => {
-      const res14 = await fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 14 });
-      if (res14.fixtures.length === 0) {
-        return fetchFixtures({ leagueIds: HOMEPAGE_FEATURED_8_IDS_STR, days: 30 });
-      }
-      return res14;
-    },
+    queryKey: ["homepage-featured-fixtures", fetchParams.leagueIds, fetchParams.days],
+    queryFn: () => fetchFixtures({ ...fetchParams }),
     staleTime: 2 * 60 * 1000,
     retry: 1,
   });
@@ -61,13 +100,23 @@ const Index = () => {
     const upcomingSoon: UpcomingSoonItem[] = [];
     const shownIds = new Set<string>();
 
-    for (const id of HOMEPAGE_FEATURED_8_IDS) {
+    const leagueIdsToProcess =
+      selectedLeague === "all"
+        ? HOMEPAGE_FEATURED_8_IDS
+        : selectedLeague.startsWith("sm:")
+          ? (() => {
+              const id = parseInt(selectedLeague.slice(3), 10);
+              return Number.isNaN(id) ? HOMEPAGE_FEATURED_8_IDS : [id];
+            })()
+          : HOMEPAGE_FEATURED_8_IDS;
+
+    for (const id of leagueIdsToProcess) {
       const list = grouped.get(id) ?? [];
       const name = getLeagueNameById(id);
       if (list.length > 0) {
-        const slice = list.slice(0, MATCHES_PER_LEAGUE);
-        slice.forEach((f) => shownIds.add(f.id));
-        featuredNow.push({ id, name, fixtures: slice });
+        const displayFixtures = getDisplayFixtures(list, id);
+        displayFixtures.forEach((f) => shownIds.add(f.id));
+        featuredNow.push({ id, name, fixtures: displayFixtures });
       } else {
         upcomingSoon.push({ id, name });
       }
@@ -81,11 +130,15 @@ const Index = () => {
 
     const remaining = fixtures
       .filter((f) => !shownIds.has(f.id))
-      .sort((a, b) => (a.kickoffIso || "").localeCompare(b.kickoffIso || ""))
+      .sort((a, b) => {
+        const da = parseUtc(a.kickoffIso)?.getTime() ?? 0;
+        const db = parseUtc(b.kickoffIso)?.getTime() ?? 0;
+        return da - db;
+      })
       .slice(0, TOP_UPCOMING_MAX);
 
     return { featuredNow, upcomingSoon, remainingFixtures: remaining };
-  }, [data?.fixtures, isError]);
+  }, [data?.fixtures, isError, selectedLeague]);
 
   const featuredFiltered = useMemo(() => {
     if (selectedLeague === "all") return featuredNow;
