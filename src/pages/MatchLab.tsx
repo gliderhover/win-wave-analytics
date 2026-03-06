@@ -10,6 +10,7 @@ import TopEdgeRibbon from "@/components/TopEdgeRibbon";
 import MatchLabTactics from "@/components/matchlab/MatchLabTactics";
 import MatchLabCornersCards from "@/components/matchlab/MatchLabCornersCards";
 import { Badge } from "@/components/ui/badge";
+import AIInsight from "@/components/dashboard/AIInsight";
 import { ArrowLeft } from "lucide-react";
 import { getFixture } from "@/lib/api";
 import { toMatchContext } from "@/types/match";
@@ -107,6 +108,10 @@ const MatchLab = () => {
                 {matchContext.home.name} vs {matchContext.away.name} • {matchContext.leagueName} • {matchContext.kickoff}{matchContext.kickoff !== "—" ? " ET" : ""}
               </p>
             </div>
+          </div>
+
+          <div className="mb-6">
+            <AIInsight fixtureId={matchContext.id} />
           </div>
 
           <div id="tactics">
