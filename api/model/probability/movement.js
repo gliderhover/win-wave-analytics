@@ -1,4 +1,4 @@
-import { getSnapshots } from "../_snapshots.js";
+import { getSnapshots } from "../../../lib/model-snapshots.js";
 
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
