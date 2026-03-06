@@ -1,4 +1,4 @@
-import { addSnapshot } from "../snapshots.js";
+import { addSnapshot } from "../_snapshots.js";
 
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
