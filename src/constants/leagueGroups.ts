@@ -37,9 +37,9 @@ export const HOMEPAGE_FEATURED_IDS: number[] = [
 
 export const HOMEPAGE_FEATURED_IDS_STR = HOMEPAGE_FEATURED_IDS.join(",");
 
-/** Fixed 8 leagues for homepage Featured (Now) — one request. */
+/** Fixed set for homepage Featured (Now) — one request (includes Eredivisie for chip filter). */
 export const HOMEPAGE_FEATURED_8_IDS: number[] = [
-  779, 8, 564, 384, 82, 301, 24, 1122,
+  779, 8, 564, 384, 82, 301, 24, 1122, 72,
 ];
 export const HOMEPAGE_FEATURED_8_IDS_STR = HOMEPAGE_FEATURED_8_IDS.join(",");
 

@@ -12,7 +12,7 @@ import AIInsight from "@/components/dashboard/AIInsight";
 import MatchQuickActions from "@/components/MatchQuickActions";
 import UpcomingFixtures from "@/components/UpcomingFixtures";
 import LeagueInfoCard from "@/components/LeagueInfoCard";
-import { getFixtures, Fixture } from "@/lib/api";
+import { getFixtures, fetchFixtures, Fixture } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -40,24 +40,29 @@ const Matches = () => {
     return { apiLeagueId: null, infoLeagueId: "ALL" as const };
   }, [selectedLeague]);
 
-  const {
-    data: fixtures,
-  } = useQuery<Fixture[]>({
+  const { data: leagueFixtures } = useQuery<Fixture[]>({
     queryKey: ["matches-league-fixtures", apiLeagueId, daysForRange],
-    queryFn: () =>
-      apiLeagueId
-        ? getFixtures({ leagueId: apiLeagueId, days: daysForRange })
-        : Promise.resolve([]),
+    queryFn: () => getFixtures({ leagueId: apiLeagueId!, days: daysForRange }),
     enabled: !!apiLeagueId,
     retry: 1,
   });
 
-  const fixtureCount = fixtures?.length ?? 0;
+  const { data: allFixturesData } = useQuery({
+    queryKey: ["fixtures", { league: "all", days: daysForRange }],
+    queryFn: () => fetchFixtures({ all: true, days: daysForRange }),
+    enabled: selectedLeague === "all",
+    retry: 1,
+  });
+
+  const fixtureCount =
+    selectedLeague === "all"
+      ? (allFixturesData?.fixtures?.length ?? 0)
+      : (leagueFixtures?.length ?? 0);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <TopEdgeRibbon />
+      {selectedLeague !== "all" && <TopEdgeRibbon />}
 
       <div className="pt-[7.5rem] pb-20 px-4">
         <div className="container mx-auto">

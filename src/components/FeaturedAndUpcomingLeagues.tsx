@@ -50,7 +50,7 @@ export default function FeaturedAndUpcomingLeagues({
         {featuredNow.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-foreground">Featured leagues (Now)</h2>
+              <h2 className="text-lg font-bold text-foreground">Featured Games</h2>
               <Link
                 to="/matches"
                 className="text-xs font-mono text-primary hover:underline flex items-center gap-1"
@@ -65,29 +65,35 @@ export default function FeaturedAndUpcomingLeagues({
                   className="gradient-card rounded-xl border border-border p-4"
                 >
                   <div className="text-sm font-semibold text-foreground mb-3">{name}</div>
-                  <ul className="space-y-2">
-                    {fixtures.map((m) => {
-                      const match = toMatchContextFromUiFixture(m);
-                      return (
-                        <li
-                          key={m.id}
-                          className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 px-3 py-2"
-                        >
-                          <div className="flex-1 min-w-0 text-sm text-foreground">
-                            <span className="font-medium">{m.homeTeam || "TBD"}</span>
-                            <span className="text-muted-foreground text-xs mx-1.5">vs</span>
-                            <span className="font-medium">{m.awayTeam || "TBD"}</span>
-                          </div>
-                          <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-                            {m.kickoffDate && m.kickoffTime
-                              ? `${m.kickoffDate} • ${m.kickoffTime} ET`
-                              : "—"}
-                          </span>
-                          <MatchQuickActions match={match} />
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  {fixtures.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-3">
+                      Schedule will appear when available.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {fixtures.map((m) => {
+                        const match = toMatchContextFromUiFixture(m);
+                        return (
+                          <li
+                            key={m.id}
+                            className="flex items-center gap-3 rounded-lg border border-border bg-secondary/30 px-3 py-2"
+                          >
+                            <div className="flex-1 min-w-0 text-sm text-foreground">
+                              <span className="font-medium">{m.homeTeam || "TBD"}</span>
+                              <span className="text-muted-foreground text-xs mx-1.5">vs</span>
+                              <span className="font-medium">{m.awayTeam || "TBD"}</span>
+                            </div>
+                            <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+                              {m.kickoffDate && m.kickoffTime
+                                ? `${m.kickoffDate} • ${m.kickoffTime} ET`
+                                : "—"}
+                            </span>
+                            <MatchQuickActions match={match} />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>

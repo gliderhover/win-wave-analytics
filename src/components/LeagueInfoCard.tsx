@@ -13,9 +13,6 @@ const LeagueInfoCard = ({ leagueId, fixtureCount }: LeagueInfoCardProps) => {
   if (leagueId === "ALL") {
     return (
       <div className="mb-4">
-        <div className="mb-3 rounded-lg border-2 border-yellow-400 bg-yellow-950/70 px-3 py-2 text-sm font-bold text-yellow-100">
-          LEAGUE INFO CARD MOUNTED
-        </div>
         <div className="gradient-card rounded-xl border border-border p-5 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-foreground">All Leagues</h3>
@@ -46,9 +43,6 @@ const LeagueInfoCard = ({ leagueId, fixtureCount }: LeagueInfoCardProps) => {
   if (isLoading) {
     return (
       <div className="mb-4">
-        <div className="mb-3 rounded-lg border-2 border-yellow-400 bg-yellow-950/70 px-3 py-2 text-sm font-bold text-yellow-100">
-          LEAGUE INFO CARD MOUNTED
-        </div>
         <div className="gradient-card rounded-xl border border-border p-5 flex items-center gap-4">
           <Skeleton className="h-10 w-10 rounded-lg" />
           <div className="flex-1 space-y-2">
@@ -64,9 +58,6 @@ const LeagueInfoCard = ({ leagueId, fixtureCount }: LeagueInfoCardProps) => {
   if (isError || !league) {
     return (
       <div className="mb-4">
-        <div className="mb-3 rounded-lg border-2 border-yellow-400 bg-yellow-950/70 px-3 py-2 text-sm font-bold text-yellow-100">
-          LEAGUE INFO CARD MOUNTED
-        </div>
         <div className="gradient-card rounded-xl border border-border p-5 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-foreground">League {leagueId}</h3>
@@ -83,9 +74,6 @@ const LeagueInfoCard = ({ leagueId, fixtureCount }: LeagueInfoCardProps) => {
 
   return (
     <div className="mb-4">
-      <div className="mb-3 rounded-lg border-2 border-yellow-400 bg-yellow-950/70 px-3 py-2 text-sm font-bold text-yellow-100">
-        LEAGUE INFO CARD MOUNTED
-      </div>
       <div className="gradient-card rounded-xl border border-border p-5 flex items-center gap-4">
         {league.image_path ? (
           <img
