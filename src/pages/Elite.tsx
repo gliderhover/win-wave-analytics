@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import ProGate from "@/components/ProGate";
@@ -31,7 +31,7 @@ import {
   type ElitePlayer,
   type EliteCoach,
 } from "@/lib/eliteData";
-import { leagues } from "@/lib/leagueData";
+import { ALLOWED_LEAGUES } from "@/constants/allowedLeagues";
 import {
   RadarChart,
   PolarGrid,
@@ -492,8 +492,11 @@ const RadarAnalyticsTab = () => {
 
   const competitionOptions = useMemo(
     () => [
-      { value: "all", label: "All Competitions" },
-      ...leagues.map((l) => ({ value: l.id, label: `${l.logo} ${l.shortName}` })),
+      { value: "all", label: "All Leagues" },
+      ...ALLOWED_LEAGUES.map((l) => ({
+        value: String(l.id),
+        label: l.name,
+      })),
     ],
     []
   );
@@ -561,14 +564,16 @@ const RadarAnalyticsTab = () => {
   const entityA = getEntity(entityType, entityAId);
   const entityB = compare ? getEntity(entityType, entityBId) : null;
 
+  const radarScores =
+    entityA && "radar_scores" in entityA
+      ? (entityA as EliteTeam | ElitePlayer | EliteCoach).radar_scores
+      : null;
+
   const axisData = axes.map((axis) => ({
     axis,
-    A:
-      entityA && "radar_scores" in entityA
-        ? (entityA as EliteTeam).radar_scores[axis] ?? 0
-        : 0,
+    A: radarScores ? radarScores[axis] ?? 0 : 0,
     ...(entityB && "radar_scores" in entityB
-      ? { B: (entityB as EliteTeam).radar_scores[axis] ?? 0 }
+      ? { B: (entityB as EliteTeam | ElitePlayer | EliteCoach).radar_scores[axis] ?? 0 }
       : {}),
   }));
 
@@ -577,10 +582,32 @@ const RadarAnalyticsTab = () => {
     label: `${e.flag} ${e.name}`,
   }));
 
+  useEffect(() => {
+    const first = getEntities(entityType)[0];
+    if (first && !getEntity(entityType, entityAId)) {
+      setEntityAId(first.id);
+    }
+  }, [entityType]);
+
   const selectedTeam =
     entityType === "team"
       ? eliteTeams.find((t) => t.id === entityAId) ?? eliteTeams[0]
       : null;
+  const selectedPlayer =
+    entityType === "player"
+      ? elitePlayers.find((p) => p.id === entityAId) ?? null
+      : null;
+  const selectedCoach =
+    entityType === "coach"
+      ? eliteCoaches.find((c) => c.id === entityAId) ?? null
+      : null;
+
+  const entitySelectLabel =
+    entityType === "team"
+      ? "SELECT TEAM"
+      : entityType === "player"
+        ? "SELECT PLAYER"
+        : "SELECT COACH";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -626,7 +653,7 @@ const RadarAnalyticsTab = () => {
           ]}
         />
         <FilterSelect
-          label="SELECT TEAM"
+          label={entitySelectLabel}
           value={entityAId}
           onChange={setEntityAId}
           options={
@@ -658,7 +685,13 @@ const RadarAnalyticsTab = () => {
                   tick={{ fill: "hsl(215 20% 55%)", fontSize: 9 }}
                 />
                 <Radar
-                  name={entityType === "team" ? (entityA as EliteTeam).name : "A"}
+                  name={
+                    entityType === "team"
+                      ? (entityA as EliteTeam).name
+                      : entityType === "player"
+                        ? (entityA as ElitePlayer).name
+                        : (entityA as EliteCoach).name
+                  }
                   dataKey="A"
                   stroke="#14b8a6"
                   fill="#14b8a633"
@@ -669,7 +702,9 @@ const RadarAnalyticsTab = () => {
                     name={
                       entityType === "team"
                         ? (entityB as EliteTeam).name
-                        : "B"
+                        : entityType === "player"
+                          ? (entityB as ElitePlayer).name
+                          : (entityB as EliteCoach).name
                     }
                     dataKey="B"
                     stroke="#f97316"
@@ -688,21 +723,24 @@ const RadarAnalyticsTab = () => {
             </div>
           )}
         </div>
-        {entityA && "radar_scores" in entityA && (
-          <div className="grid grid-cols-4 gap-2 text-xs">
-            {axes.map((ax) => (
-              <div key={ax} className="flex justify-between">
-                <span className="text-muted-foreground">{ax}:</span>
-                <span className="font-mono">
-                  {(entityA as EliteTeam).radar_scores[ax] ?? 0}
-                </span>
-              </div>
-            ))}
-          </div>
+        {entityA && radarScores && (
+          <>
+            <div className="text-[10px] font-mono uppercase text-muted-foreground mb-2">
+              Score Breakdown
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-xs">
+              {axes.map((ax) => (
+                <div key={ax} className="flex justify-between">
+                  <span className="text-muted-foreground">{ax}:</span>
+                  <span className="font-mono">{radarScores[ax] ?? 0}</span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
-      {/* Team Profile */}
+      {/* Profile panel: Team / Player / Coach — same visual */}
       {selectedTeam && (
         <div className="gradient-card rounded-xl border border-border p-5">
           <h3 className="text-sm font-semibold text-foreground mb-2">
@@ -710,6 +748,9 @@ const RadarAnalyticsTab = () => {
           </h3>
           <p className="text-[10px] text-muted-foreground mb-4">
             Updated {selectedTeam.last_updated}
+          </p>
+          <p className="text-[10px] text-muted-foreground mb-4">
+            Data coverage: International matches (last 4 years)
           </p>
 
           <div className="space-y-4 text-xs">
@@ -759,31 +800,27 @@ const RadarAnalyticsTab = () => {
                 <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
                   PERFORMANCE (4Y)
                 </h4>
-                <div className="space-y-1">
-                  <div>Win: {selectedTeam.performance_4y.win}%</div>
-                  <div>Draw: {selectedTeam.performance_4y.draw}%</div>
-                  <div>Loss: {selectedTeam.performance_4y.loss}%</div>
+                <div className="space-y-1 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-primary/20 text-primary font-mono">
+                    Win: {selectedTeam.performance_4y.win}%
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-secondary text-muted-foreground font-mono">
+                    Draw: {selectedTeam.performance_4y.draw}%
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-signal-bearish/20 text-signal-bearish font-mono">
+                    Loss: {selectedTeam.performance_4y.loss}%
+                  </span>
                 </div>
-              </div>
-            )}
-
-            {selectedTeam.key_metrics && (
-              <div>
-                <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
-                  Key Metrics
-                </h4>
-                <div className="space-y-1">
-                  <div>Goals For / Game: {selectedTeam.key_metrics.goalsFor}</div>
-                  <div>
-                    Goals Against / Game: {selectedTeam.key_metrics.goalsAgainst}
+                {selectedTeam.key_metrics && (
+                  <div className="mt-2 space-y-1">
+                    <div>Goals For / Game: {selectedTeam.key_metrics.goalsFor}</div>
+                    <div>Goals Against / Game: {selectedTeam.key_metrics.goalsAgainst}</div>
+                    <div>Clean Sheet Rate: {selectedTeam.key_metrics.cleanSheet}%</div>
+                    <div>BTTS Rate (Both Teams To Score): {selectedTeam.key_metrics.btts}%</div>
+                    <div>Home Win Rate: {selectedTeam.key_metrics.homeWin}%</div>
+                    <div>Away Win Rate: {selectedTeam.key_metrics.awayWin}%</div>
                   </div>
-                  <div>
-                    Clean Sheet Rate: {selectedTeam.key_metrics.cleanSheet}%
-                  </div>
-                  <div>BTTS Rate: {selectedTeam.key_metrics.btts}%</div>
-                  <div>Home Win Rate: {selectedTeam.key_metrics.homeWin}%</div>
-                  <div>Away Win Rate: {selectedTeam.key_metrics.awayWin}%</div>
-                </div>
+                )}
               </div>
             )}
 
@@ -823,6 +860,119 @@ const RadarAnalyticsTab = () => {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {selectedPlayer && (
+        <div className="gradient-card rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-2">
+            Player Profile
+          </h3>
+          <p className="text-[10px] text-muted-foreground mb-4">
+            Updated {selectedPlayer.last_updated}
+          </p>
+
+          <div className="space-y-4 text-xs">
+            <div>
+              <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                BASICS
+              </h4>
+              <div className="space-y-1">
+                <div>Player: {selectedPlayer.name}</div>
+                <div>Country: {selectedPlayer.country}</div>
+                <div>Club: {selectedPlayer.club}</div>
+                <div>Position: {selectedPlayer.position}</div>
+                <div>Competition: {selectedPlayer.league_name}</div>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                LOAD & FORM
+              </h4>
+              <div className="space-y-1">
+                <div>Minutes played: {selectedPlayer.minutes_played}</div>
+                <div>Fatigue: {selectedPlayer.fatigue}</div>
+                <div>Form (last 5): {selectedPlayer.form_trend.join(" ")}</div>
+              </div>
+            </div>
+            {selectedPlayer.signals && (
+              <div>
+                <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                  SIGNALS
+                </h4>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  {Object.entries(selectedPlayer.signals).map(([k, v]) => (
+                    <div key={k} className="flex justify-between">
+                      <span className="text-muted-foreground capitalize">{k.replace("_", " ")}:</span>
+                      <span className="font-mono">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {selectedCoach && (
+        <div className="gradient-card rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-2">
+            Coach Profile
+          </h3>
+          <p className="text-[10px] text-muted-foreground mb-4">
+            Updated {selectedCoach.last_updated}
+          </p>
+
+          <div className="space-y-4 text-xs">
+            <div>
+              <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                BASICS
+              </h4>
+              <div className="space-y-1">
+                <div>Coach: {selectedCoach.name}</div>
+                <div>Country: {selectedCoach.country}</div>
+                <div>Team: {selectedCoach.team}</div>
+                <div>Competition: {selectedCoach.league_name}</div>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                TACTICS
+              </h4>
+              <div className="space-y-1">
+                <div>Formation: {selectedCoach.formation_preference}</div>
+                <div>Substitution tendency: {selectedCoach.substitution_tendency}</div>
+                <div>Big match record: {selectedCoach.big_match_record}</div>
+              </div>
+            </div>
+            {selectedCoach.controversy_flags.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                  FLAGS
+                </h4>
+                <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                  {selectedCoach.controversy_flags.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {selectedCoach.signals && (
+              <div>
+                <h4 className="text-[10px] font-mono uppercase text-muted-foreground mb-1">
+                  SIGNALS
+                </h4>
+                <div className="grid grid-cols-2 gap-1 text-[10px]">
+                  {Object.entries(selectedCoach.signals).map(([k, v]) => (
+                    <div key={k} className="flex justify-between">
+                      <span className="text-muted-foreground capitalize">{k.replace("_", " ")}:</span>
+                      <span className="font-mono">{v}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
