@@ -41,6 +41,7 @@ const Navbar = () => {
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Optional: fetch for analytics/background; dropdown uses allowedLeagues only
   useQuery({
