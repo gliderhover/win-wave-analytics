@@ -11,7 +11,7 @@ import { useI18n } from "@/i18n/I18nContext";
 import { getAllMatches, filterByLeague } from "@/lib/multiLeagueData";
 import {
   getSimulationState, saveSimulationState, getStats, mockContests,
-  SimulationState, VIRTUAL_CURRENCY,
+  SimulationState, VIRTUAL_CURRENCY, MIN_BETS_TO_RANK,
 } from "@/lib/simulationData";
 import { ScheduleMatch } from "@/lib/scheduleData";
 import { cn } from "@/lib/utils";

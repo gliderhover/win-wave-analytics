@@ -193,7 +193,7 @@ const GameSchedulePanel = ({ onSelectMatch }: GameSchedulePanelProps) => {
                                 <Eye className="w-3 h-3 mr-0.5" /> Open
                               </Button>
                               {isPro && (
-                                <Button variant="outline" size="sm" className="text-[10px] h-6 px-2" onClick={() => toast.success(`Notification set for ${m.teamHome} vs ${m.teamAway}`)}>
+                              <Button variant="outline" size="sm" className="text-[10px] h-6 px-2" onClick={() => toast.success(`Notification set for ${m.homeTeam} vs ${m.awayTeam}`)}>
                                   <Bell className="w-3 h-3" />
                                 </Button>
                               )}
