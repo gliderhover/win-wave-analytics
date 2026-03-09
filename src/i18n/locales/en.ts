@@ -208,7 +208,7 @@ const en = {
   "simulation.title": "Paper Betting Simulator",
   "simulation.disclaimer": "Simulation only • No real money • No payouts",
   "simulation.heroDesc": "Practice with virtual bankroll using real matches, real odds, real outcomes.",
-  "simulation.joinContest": "Join Weekly Contest",
+  "simulation.joinContest": "Join Monthly Contest",
   "simulation.viewLeaderboard": "View Global Leaderboard →",
   "simulation.yourBankroll": "Your Bankroll",
   "simulation.contests": "Contests",

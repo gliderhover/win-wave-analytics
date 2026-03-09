@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import BetSlipModal from "@/components/simulation/BetSlipModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLeague } from "@/contexts/LeagueContext";
 import { useUserTier } from "@/contexts/UserTierContext";
 import { useI18n } from "@/i18n/I18nContext";
@@ -34,6 +35,43 @@ const Simulation = () => {
   const weeklyLimit = isPro ? Infinity : 10;
   const canBet = simState.weeklyBetsCount < weeklyLimit;
 
+  const leagueContestOptions = [
+    { key: "all-soccer", label: "All Soccer", contestId: "monthly-global-soccer" },
+    { key: "mls", label: "MLS", contestId: "monthly-mls" },
+    { key: "epl", label: "Premier League", contestId: "monthly-epl" },
+    { key: "fa-cup", label: "FA Cup", contestId: "monthly-global-soccer" },
+    { key: "la-liga", label: "La Liga", contestId: "monthly-la-liga" },
+    { key: "serie-a", label: "Serie A", contestId: "monthly-serie-a" },
+    { key: "bundesliga", label: "Bundesliga", contestId: "monthly-bundesliga" },
+    { key: "ligue-1", label: "Ligue 1", contestId: "monthly-ligue1" },
+    { key: "eredivisie", label: "Eredivisie", contestId: "monthly-eredivisie" },
+    { key: "libertadores", label: "Libertadores", contestId: "monthly-libertadores" },
+  ] as const;
+
+  const defaultContestKey = useMemo(() => {
+    if (selectedLeague.startsWith("sm:")) {
+      const id = selectedLeague.slice(3);
+      if (id === "779") return "mls";
+      if (id === "8") return "epl";
+      if (id === "564") return "la-liga";
+      if (id === "384") return "serie-a";
+      if (id === "82") return "bundesliga";
+      if (id === "301") return "ligue-1";
+      if (id === "72") return "eredivisie";
+      if (id === "1122") return "libertadores";
+      if (id === "24") return "fa-cup";
+    }
+    return "all-soccer";
+  }, [selectedLeague]);
+
+  const [contestLeagueKey, setContestLeagueKey] = useState<string>(defaultContestKey);
+
+  const selectedContest = leagueContestOptions.find((o) => o.key === contestLeagueKey) ?? leagueContestOptions[0];
+  const contestCtaLabel =
+    selectedContest.key === "all-soccer"
+      ? "Join Monthly Global Soccer Contest"
+      : `Join Monthly ${selectedContest.label} Contest`;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -53,9 +91,26 @@ const Simulation = () => {
             {t("simulation.heroDesc")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/simulation/contest" className="gradient-primary text-primary-foreground font-bold px-8 py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2">
-              <Trophy className="w-5 h-5" /> {t("simulation.joinContest")}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/simulation/contest?contestId=${selectedContest.contestId}`}
+                className="gradient-primary text-primary-foreground font-bold px-8 py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
+              >
+                <Trophy className="w-5 h-5" /> {contestCtaLabel}
+              </Link>
+              <Select value={contestLeagueKey} onValueChange={setContestLeagueKey}>
+                <SelectTrigger className="h-9 w-[180px] text-xs">
+                  <SelectValue placeholder="All Soccer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leagueContestOptions.map((opt) => (
+                    <SelectItem key={opt.key} value={opt.key} className="text-xs">
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Link to="/simulation/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors text-sm font-mono border border-border px-6 py-3 rounded-lg hover:border-primary/30">
               {t("simulation.viewLeaderboard")}
             </Link>
@@ -105,7 +160,7 @@ const Simulation = () => {
             <div className="gradient-card rounded-xl border border-border p-5">
               <div className="flex items-center gap-2 mb-4">
                 <Award className="w-5 h-5 text-primary" />
-                <h3 className="text-base font-bold text-foreground">{t("simulation.contests")}</h3>
+              <h3 className="text-base font-bold text-foreground">Monthly Contests (Soccer)</h3>
               </div>
               <div className="space-y-3">
                 {mockContests.filter(c => c.status !== "completed").map(c => (
@@ -121,7 +176,12 @@ const Simulation = () => {
                     <div className="text-[10px] text-muted-foreground font-mono mb-2">
                       <Calendar className="w-3 h-3 inline mr-1" />{c.startDate} — {c.endDate}
                     </div>
-                    <div className="text-[10px] text-muted-foreground mb-2">{c.prizeLabel}</div>
+                  <div className="text-[10px] text-muted-foreground mb-1">
+                    Monthly Winner Badge • Soccer-only
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mb-2">
+                    Minimum 20 bets • Drawdown-adjusted ranking
+                  </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-muted-foreground">{c.participants.toLocaleString()} {t("contest.participants").toLowerCase()}</span>
                       <Link to="/simulation/contest">
@@ -147,12 +207,30 @@ const Simulation = () => {
                   { label: t("simulation.maxDrawdown"), value: `${stats.maxDrawdownPct}%`, icon: "📉" },
                   { label: t("simulation.winStreak"), value: `${stats.longestWinStreak}`, icon: "🔥" },
                   { label: t("performance.currentStreak"), value: `${stats.currentStreak}W`, icon: "⚡" },
-                ].map(s => (
-                  <div key={s.label} className="flex items-center justify-between bg-secondary/30 rounded-lg p-2.5">
+                  {
+                    label: "Monthly Badge",
+                    value:
+                      stats.totalBets >= MIN_BETS_TO_RANK
+                        ? "Eligible"
+                        : `${stats.totalBets}/${MIN_BETS_TO_RANK} bets`,
+                    icon: "🏅",
+                  },
+                  {
+                    label: "Monthly Rank",
+                    value: "—", // mock for now
+                    icon: "📈",
+                  },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex items-center justify-between bg-secondary/30 rounded-lg p-2.5"
+                  >
                     <span className="text-xs text-muted-foreground flex items-center gap-1.5">
                       <span>{s.icon}</span> {s.label}
                     </span>
-                    <span className="font-mono text-sm font-bold text-foreground">{s.value}</span>
+                    <span className="font-mono text-sm font-bold text-foreground">
+                      {s.value}
+                    </span>
                   </div>
                 ))}
               </div>

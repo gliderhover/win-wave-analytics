@@ -60,6 +60,9 @@ export interface Contest {
   participants: number;
   prizeLabel: string;
   status: "active" | "upcoming" | "completed";
+  leagueId?: number | null;
+  format?: "MONTHLY" | "ANNUAL";
+  badge?: "MONTHLY" | "ANNUAL";
 }
 
 export interface CertifiedAnalyst {
@@ -300,13 +303,142 @@ export function generateLeaderboard(timeframe: string): LeaderboardEntry[] {
   return entries.sort((a, b) => b.score - a.score).map((e, i) => ({ ...e, rank: i + 1 }));
 }
 
-// ─── Mock Contests ──────────────────────────────────────────────
+// ─── Mock Contests (Soccer Monthly) ─────────────────────────────
+
+function currentMonthRange() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const start = new Date(Date.UTC(y, m, 1));
+  const end = new Date(Date.UTC(y, m + 1, 0));
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return {
+    start: fmt(start),
+    end: fmt(end),
+  };
+}
+
+const MONTH_RANGE = currentMonthRange();
 
 export const mockContests: Contest[] = [
-  { id: "wk-1", name: "Weekly Sprint #12", type: "weekly", startDate: "Mar 1, 2026", endDate: "Mar 7, 2026", participants: 1842, prizeLabel: "Top 10 get 'Weekly Winner' badge", status: "active" },
-  { id: "wk-2", name: "Weekly Sprint #13", type: "weekly", startDate: "Mar 8, 2026", endDate: "Mar 14, 2026", participants: 0, prizeLabel: "Top 10 get 'Weekly Winner' badge", status: "upcoming" },
-  { id: "mo-1", name: "March Madness Season", type: "monthly", startDate: "Mar 1, 2026", endDate: "Mar 31, 2026", participants: 4231, prizeLabel: "Top 3 get 'Monthly Champion' badge", status: "active" },
-  { id: "yr-1", name: "2026 Annual Championship", type: "annual", startDate: "Jan 1, 2026", endDate: "Dec 31, 2026", participants: 12847, prizeLabel: "Top 100 earn 'Certified Analyst' status", status: "active" },
+  {
+    id: "monthly-global-soccer",
+    name: "Monthly Global Soccer Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: null,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 4821,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-mls",
+    name: "Monthly MLS Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 779,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 932,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-epl",
+    name: "Monthly Premier League Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 8,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 1712,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-la-liga",
+    name: "Monthly La Liga Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 564,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 864,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-serie-a",
+    name: "Monthly Serie A Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 384,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 623,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-bundesliga",
+    name: "Monthly Bundesliga Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 82,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 511,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-ligue1",
+    name: "Monthly Ligue 1 Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 301,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 407,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-eredivisie",
+    name: "Monthly Eredivisie Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 72,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 289,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
+  {
+    id: "monthly-libertadores",
+    name: "Monthly Libertadores Contest",
+    type: "monthly",
+    format: "MONTHLY",
+    badge: "MONTHLY",
+    leagueId: 1122,
+    startDate: MONTH_RANGE.start,
+    endDate: MONTH_RANGE.end,
+    participants: 358,
+    prizeLabel: "Top 100 get 'Monthly Winner' badge",
+    status: "active",
+  },
 ];
 
 // ─── Mock Certified Analysts ────────────────────────────────────

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { ArrowLeft, Trophy, Info, Medal, Award, Star } from "lucide-react";
 
 const badgeIcons: Record<string, { icon: React.ReactNode; label: string }> = {
-  weekly_winner: { icon: <Star className="w-3 h-3 text-signal-neutral" />, label: "Weekly Winner" },
+  weekly_winner: { icon: <Star className="w-3 h-3 text-signal-neutral" />, label: "Monthly Winner" },
   monthly_champion: { icon: <Medal className="w-3 h-3 text-primary" />, label: "Monthly Champion" },
   certified: { icon: <Award className="w-3 h-3 text-signal-bullish" />, label: "Certified" },
 };
