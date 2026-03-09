@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { mockMatches } from "@/lib/mockData";
@@ -13,8 +13,6 @@ import SmartMoneyDashboard from "@/components/dashboard/SmartMoneyDashboard";
 import LiveProbabilityPanel from "@/components/dashboard/LiveProbabilityPanel";
 import AlertsCenter from "@/components/dashboard/AlertsCenter";
 import BankrollManager from "@/components/dashboard/BankrollManager";
-import WinRateMovementChart from "@/components/dashboard/WinRateMovementChart";
-import AIInsight from "@/components/dashboard/AIInsight";
 import SuggestedBets from "@/components/dashboard/SuggestedBets";
 import LiveGamesPanel from "@/components/dashboard/LiveGamesPanel";
 import GameSchedulePanel from "@/components/dashboard/GameSchedulePanel";
@@ -22,6 +20,7 @@ import EliteDDSnapshot from "@/components/dashboard/EliteDDSnapshot";
 import Navbar from "@/components/Navbar";
 import MatchQuickActions from "@/components/MatchQuickActions";
 import { cn } from "@/lib/utils";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip as RTooltip } from "recharts";
 
 const Dashboard = () => {
   const { isPro } = useUserTier();
@@ -29,6 +28,136 @@ const Dashboard = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [selectedFixtureId, setSelectedFixtureId] = useState<string | null>(null);
+
+  // A) Dashboard state
+  const [prob, setProb] = useState<{
+    home: number;
+    draw: number;
+    away: number;
+    confidence: number;
+    volatility: number;
+    updatedAt: string;
+  } | null>(null);
+  const [movement, setMovement] = useState<{ ts: number; home: number; draw: number; away: number }[]>([]);
+  const [ai, setAi] = useState<{ aiInsight: string; keyFactors: string[]; riskLevel: "LOW" | "MEDIUM" | "HIGH"; confidence: number } | null>(null);
+  const [loadingProb, setLoadingProb] = useState(false);
+  const [loadingMove, setLoadingMove] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [errorAI, setErrorAI] = useState<string | null>(null);
+
+  const aiRetryAfterRef = useRef<number>(0);
+  const pollProbRef = useRef<number | null>(null);
+  const pollMoveRef = useRef<number | null>(null);
+
+  const devLog = (...args: any[]) => {
+    if (import.meta.env.DEV) console.log(...args);
+  };
+
+  // B) Fetch functions
+  const fetchProbability = async (fixtureId: string) => {
+    setLoadingProb(true);
+    try {
+      const res = await fetch(`/api/sports?type=model_probability&fixtureId=${encodeURIComponent(fixtureId)}`);
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "Probability request failed");
+
+      const next = {
+        home: Number(json.home ?? 0),
+        draw: Number(json.draw ?? 0),
+        away: Number(json.away ?? 0),
+        confidence: Number(json.confidence ?? 0),
+        volatility: Number(json.volatility ?? 0),
+        updatedAt: String(json.updatedAt ?? new Date().toISOString()),
+      };
+      setProb(next);
+
+      // Ensure movement can accumulate: persist a snapshot each time we fetch probability
+      fetch("/api/sports?type=model_probability_snapshot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fixtureId, home: next.home, draw: next.draw, away: next.away }),
+      }).catch(() => {});
+    } catch (e) {
+      devLog("[dashboard] fetchProbability error", e);
+      setProb(null);
+    } finally {
+      setLoadingProb(false);
+    }
+  };
+
+  const fetchMovement = async (fixtureId: string) => {
+    setLoadingMove(true);
+    try {
+      const res = await fetch(`/api/sports?type=model_probability_movement&fixtureId=${encodeURIComponent(fixtureId)}&minutes=60`);
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "Movement request failed");
+      const snaps = Array.isArray(json.snapshots) ? json.snapshots : [];
+      setMovement(
+        snaps
+          .map((s: any) => ({ ts: Number(s.ts), home: Number(s.home), draw: Number(s.draw), away: Number(s.away) }))
+          .filter((s: any) => Number.isFinite(s.ts))
+          .sort((a: any, b: any) => a.ts - b.ts)
+      );
+    } catch (e) {
+      devLog("[dashboard] fetchMovement error", e);
+      setMovement([]);
+    } finally {
+      setLoadingMove(false);
+    }
+  };
+
+  const fetchAIInsight = async (fixtureId: string) => {
+    const now = Date.now();
+    if (now < aiRetryAfterRef.current) {
+      devLog("[dashboard] AI backoff active; skipping");
+      return;
+    }
+
+    // Optional 1h cache
+    try {
+      const key = `ai_insight_${fixtureId}`;
+      const cachedRaw = localStorage.getItem(key);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (cached?.ts && now - cached.ts < 60 * 60 * 1000 && cached?.data?.aiInsight) {
+          setAi(cached.data);
+          setErrorAI(null);
+          return;
+        }
+      }
+    } catch {}
+
+    setLoadingAI(true);
+    setErrorAI(null);
+    try {
+      const res = await fetch("/api/sports?type=ai_insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fixtureId }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) throw new Error(json.error || "AI request failed");
+
+      const next = {
+        aiInsight: String(json.aiInsight ?? "").trim(),
+        keyFactors: Array.isArray(json.keyFactors) ? json.keyFactors.map(String) : [],
+        riskLevel: (["LOW", "MEDIUM", "HIGH"].includes(json.riskLevel) ? json.riskLevel : "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
+        confidence: Number(json.confidence ?? 50),
+      };
+      setAi(next);
+
+      try {
+        localStorage.setItem(`ai_insight_${fixtureId}`, JSON.stringify({ ts: now, data: next }));
+      } catch {}
+    } catch (e: any) {
+      devLog("[dashboard] fetchAIInsight error", e);
+      setAi(null);
+      setErrorAI("Insight unavailable");
+      aiRetryAfterRef.current = Date.now() + 60_000; // backoff 60s on AI failure
+    } finally {
+      setLoadingAI(false);
+    }
+  };
 
   const leagueLabel = useMemo(() => {
     if (selectedLeague === "all") return t("nav.allLeagues");
@@ -64,19 +193,6 @@ const Dashboard = () => {
       (a.kickoffIso || "").localeCompare(b.kickoffIso || "")
     );
   }, [featuredData?.fixtures]);
-
-  const { data: probData } = useQuery({
-    queryKey: ["model-probability", selectedFixtureId],
-    queryFn: async () => {
-      const res = await fetch(`/api/sports?type=model_probability&fixtureId=${encodeURIComponent(selectedFixtureId!)}`);
-      const json = await res.json();
-      if (!json.ok) throw new Error("Failed to fetch probability");
-      return json as { home: number; draw: number; away: number };
-    },
-    enabled: !!selectedFixtureId,
-    staleTime: 60 * 1000,
-    refetchInterval: 60 * 1000,
-  });
 
   const { data: liveData } = useQuery({
     queryKey: ["dashboard-live-fixtures", selectedLeague],
@@ -126,13 +242,53 @@ const Dashboard = () => {
       teamA,
       teamB,
       kickoff: formatNYDateTimeWithET(selectedFixture.kickoffIso),
-      modelProbA: probData?.home ?? base.modelProbA,
-      modelProbDraw: probData?.draw ?? base.modelProbDraw,
-      modelProbB: probData?.away ?? base.modelProbB,
+      modelProbA: prob?.home ?? base.modelProbA,
+      modelProbDraw: prob?.draw ?? base.modelProbDraw,
+      modelProbB: prob?.away ?? base.modelProbB,
     };
-  }, [selectedFixture, probData]);
+  }, [selectedFixture, prob]);
 
   const matchContext = selectedFixture ? toMatchContextFromUiFixture(selectedFixture) : null;
+
+  // C) useEffect wiring
+  useEffect(() => {
+    if (!selectedFixtureId) return;
+
+    // Reset state for new fixture
+    setMovement([]);
+    setErrorAI(null);
+    setAi(null);
+
+    fetchProbability(selectedFixtureId);
+    fetchMovement(selectedFixtureId);
+    fetchAIInsight(selectedFixtureId);
+
+    if (pollProbRef.current) window.clearInterval(pollProbRef.current);
+    if (pollMoveRef.current) window.clearInterval(pollMoveRef.current);
+
+    pollProbRef.current = window.setInterval(() => {
+      fetchProbability(selectedFixtureId);
+    }, 15_000);
+
+    pollMoveRef.current = window.setInterval(() => {
+      fetchMovement(selectedFixtureId);
+    }, 45_000);
+
+    return () => {
+      if (pollProbRef.current) window.clearInterval(pollProbRef.current);
+      if (pollMoveRef.current) window.clearInterval(pollMoveRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFixtureId]);
+
+  const chartData = useMemo(() => {
+    return movement.map((s) => ({
+      time: new Date(s.ts).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
+      home: s.home,
+      draw: s.draw,
+      away: s.away,
+    }));
+  }, [movement]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -258,15 +414,15 @@ const Dashboard = () => {
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-secondary/50 rounded-lg p-3 text-center">
                   <div className="text-xs text-muted-foreground mb-1">{selectedMatch.teamA} {t("common.win")}</div>
-                  <div className="font-mono text-2xl font-bold text-primary">{selectedMatch.modelProbA}%</div>
+                  <div className="font-mono text-2xl font-bold text-primary">{prob ? `${prob.home}%` : `${selectedMatch.modelProbA}%`}</div>
                 </div>
                 <div className="bg-secondary/50 rounded-lg p-3 text-center">
                   <div className="text-xs text-muted-foreground mb-1">{t("common.draw")}</div>
-                  <div className="font-mono text-2xl font-bold text-foreground">{selectedMatch.modelProbDraw}%</div>
+                  <div className="font-mono text-2xl font-bold text-foreground">{prob ? `${prob.draw}%` : `${selectedMatch.modelProbDraw}%`}</div>
                 </div>
                 <div className="bg-secondary/50 rounded-lg p-3 text-center">
                   <div className="text-xs text-muted-foreground mb-1">{selectedMatch.teamB} {t("common.win")}</div>
-                  <div className="font-mono text-2xl font-bold text-signal-bearish">{selectedMatch.modelProbB}%</div>
+                  <div className="font-mono text-2xl font-bold text-signal-bearish">{prob ? `${prob.away}%` : `${selectedMatch.modelProbB}%`}</div>
                 </div>
               </div>
             </div>
@@ -277,18 +433,73 @@ const Dashboard = () => {
             <div className="lg:col-span-2 space-y-6">
               {selectedMatch && (
                 <>
-                  <WinRateMovementChart
-                    fixtureId={selectedFixtureId}
-                    teamA={selectedMatch.teamA}
-                    teamB={selectedMatch.teamB}
-                    isLive={
-                      !!(liveData ?? []).some(
-                        (f) => String(f.id) === selectedFixtureId
-                      )
-                    }
-                    full={isPro}
-                  />
-                  <AIInsight match={selectedMatch} fixtureId={matchContext?.id} />
+                  {/* D3) WIN-RATE MOVEMENT (wired to movement series) */}
+                  <div className="gradient-card rounded-xl border border-border p-5 card-glow">
+                    <h3 className="text-sm font-semibold text-foreground font-mono uppercase tracking-wider mb-3">
+                      Win-Rate Movement
+                    </h3>
+                    <div className="h-40">
+                      {loadingMove && chartData.length < 2 ? (
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                          Collecting win-rate data…
+                        </div>
+                      ) : chartData.length < 2 ? (
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                          Collecting win-rate data…
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData}>
+                            <XAxis dataKey="time" tick={{ fontSize: 10, fill: "hsl(215 20% 55%)" }} axisLine={false} tickLine={false} />
+                            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "hsl(215 20% 55%)" }} axisLine={false} tickLine={false} width={30} />
+                            <RTooltip
+                              contentStyle={{ background: "hsl(222 47% 9%)", border: "1px solid hsl(222 30% 16%)", borderRadius: 8, fontSize: 12 }}
+                              labelStyle={{ color: "hsl(210 40% 93%)" }}
+                            />
+                            <Line type="monotone" dataKey="home" stroke="hsl(175 85% 50%)" strokeWidth={2} dot={false} name={selectedMatch.teamA} />
+                            <Line type="monotone" dataKey="draw" stroke="hsl(45 93% 55%)" strokeWidth={2} dot={false} name="Draw" />
+                            <Line type="monotone" dataKey="away" stroke="hsl(0 72% 55%)" strokeWidth={2} dot={false} name={selectedMatch.teamB} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* D4) AI INSIGHT (wired to ai state) */}
+                  <div className="gradient-card rounded-xl border border-border p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-sm">🤖</span>
+                      <h3 className="text-sm font-semibold text-foreground font-mono uppercase tracking-wider">
+                        AI Insight
+                      </h3>
+                    </div>
+
+                    {loadingAI ? (
+                      <div className="space-y-2">
+                        <div className="h-4 bg-secondary/60 rounded animate-pulse" />
+                        <div className="h-4 bg-secondary/60 rounded animate-pulse w-5/6" />
+                        <div className="h-4 bg-secondary/60 rounded animate-pulse w-3/4" />
+                      </div>
+                    ) : ai?.aiInsight ? (
+                      <>
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                          {ai.aiInsight}
+                        </p>
+                        {ai.keyFactors?.length > 0 && (
+                          <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                            {ai.keyFactors.map((f, idx) => (
+                              <li key={idx}>{f}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {errorAI ?? "Insight unavailable."}
+                      </p>
+                    )}
+                  </div>
+
                   <SuggestedBets match={selectedMatch} />
                   <EdgeEnginePanel match={selectedMatch} />
                   <SmartMoneyDashboard match={selectedMatch} />
@@ -296,7 +507,9 @@ const Dashboard = () => {
               )}
             </div>
             <div className="space-y-6">
-              {selectedMatch && <LiveProbabilityPanel match={selectedMatch} />}
+              {selectedMatch && (
+                <LiveProbabilityPanel match={selectedMatch} prob={prob} loading={loadingProb} />
+              )}
               <EliteDDSnapshot />
               <AlertsCenter />
               <BankrollManager />
