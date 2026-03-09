@@ -22,6 +22,12 @@ export interface EliteTeam {
   h2h_summary: string;
   home_away_split: string;
   goal_timing: string;
+  squad_snapshot?: { name: string; position: string; rating: number }[];
+  performance_4y?: { win: number; draw: number; loss: number };
+  key_metrics?: { goalsFor: number; goalsAgainst: number; cleanSheet: number; btts: number; homeWin: number; awayWin: number };
+  style_indicators?: { pressIntensity: number; possessionBias: number };
+  avg_age?: number;
+  rotation_depth?: number;
 }
 
 export interface ElitePlayer {
@@ -94,6 +100,18 @@ export const eliteTeams: EliteTeam[] = [
     h2h_summary: "Brazil leads H2H 12-8-5 in last 25 meetings",
     home_away_split: "Home: W68% D18% L14% | Away: W52% D22% L26%",
     goal_timing: "62% of goals scored in 2nd half, peak at 60-75'",
+    squad_snapshot: [
+      { name: "Vinícius Jr.", position: "LW", rating: 91 },
+      { name: "Rodrygo", position: "RW", rating: 87 },
+      { name: "Casemiro", position: "CDM", rating: 84 },
+      { name: "Alisson", position: "GK", rating: 88 },
+      { name: "Marquinhos", position: "CB", rating: 85 },
+    ],
+    performance_4y: { win: 62, draw: 20, loss: 18 },
+    key_metrics: { goalsFor: 1.8, goalsAgainst: 0.9, cleanSheet: 38, btts: 52, homeWin: 68, awayWin: 52 },
+    style_indicators: { pressIntensity: 78, possessionBias: 53 },
+    avg_age: 26.8,
+    rotation_depth: 82,
   },
   {
     id: "t2", name: "Germany", country: "Germany", flag: "🇩🇪", photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
@@ -117,6 +135,18 @@ export const eliteTeams: EliteTeam[] = [
     h2h_summary: "Germany trails H2H 5-8-12 vs Brazil",
     home_away_split: "Home: W72% D16% L12% | Away: W55% D25% L20%",
     goal_timing: "55% of goals in 1st half, strong early pressure",
+    squad_snapshot: [
+      { name: "Jamal Musiala", position: "AM", rating: 89 },
+      { name: "Florian Wirtz", position: "AM", rating: 87 },
+      { name: "Antonio Rüdiger", position: "CB", rating: 86 },
+      { name: "Manuel Neuer", position: "GK", rating: 85 },
+      { name: "İlkay Gündoğan", position: "CM", rating: 84 },
+    ],
+    performance_4y: { win: 58, draw: 24, loss: 18 },
+    key_metrics: { goalsFor: 1.6, goalsAgainst: 0.8, cleanSheet: 42, btts: 48, homeWin: 72, awayWin: 55 },
+    style_indicators: { pressIntensity: 85, possessionBias: 58 },
+    avg_age: 27.2,
+    rotation_depth: 78,
   },
   {
     id: "t3", name: "Argentina", country: "Argentina", flag: "🇦🇷", photo_url: "", last_updated: "2026-02-24", league_id: "wc", league_name: "World Cup",
@@ -137,6 +167,18 @@ export const eliteTeams: EliteTeam[] = [
     h2h_summary: "Argentina leads H2H vs France 6-3-4",
     home_away_split: "Home: W75% D15% L10% | Away: W50% D28% L22%",
     goal_timing: "Balanced scoring: 48% 1H, 52% 2H",
+    squad_snapshot: [
+      { name: "Lionel Messi", position: "RW/CF", rating: 94 },
+      { name: "Lautaro Martínez", position: "CF", rating: 88 },
+      { name: "Enzo Fernández", position: "CM", rating: 85 },
+      { name: "Emiliano Martínez", position: "GK", rating: 87 },
+      { name: "Cristian Romero", position: "CB", rating: 86 },
+    ],
+    performance_4y: { win: 72, draw: 15, loss: 13 },
+    key_metrics: { goalsFor: 1.9, goalsAgainst: 0.7, cleanSheet: 45, btts: 50, homeWin: 75, awayWin: 50 },
+    style_indicators: { pressIntensity: 72, possessionBias: 55 },
+    avg_age: 28.1,
+    rotation_depth: 75,
   },
   {
     id: "t4", name: "France", country: "France", flag: "🇫🇷", photo_url: "", last_updated: "2026-02-25", league_id: "wc", league_name: "World Cup",
@@ -160,6 +202,18 @@ export const eliteTeams: EliteTeam[] = [
     h2h_summary: "France trails H2H vs Argentina 3-4-6",
     home_away_split: "Home: W70% D20% L10% | Away: W58% D22% L20%",
     goal_timing: "Late game specialists: 40% of goals after 75'",
+    squad_snapshot: [
+      { name: "Kylian Mbappé", position: "CF", rating: 92 },
+      { name: "Antoine Griezmann", position: "AM", rating: 88 },
+      { name: "Eduardo Camavinga", position: "CM", rating: 86 },
+      { name: "Mike Maignan", position: "GK", rating: 89 },
+      { name: "William Saliba", position: "CB", rating: 87 },
+    ],
+    performance_4y: { win: 65, draw: 20, loss: 15 },
+    key_metrics: { goalsFor: 1.7, goalsAgainst: 0.9, cleanSheet: 40, btts: 54, homeWin: 70, awayWin: 58 },
+    style_indicators: { pressIntensity: 80, possessionBias: 52 },
+    avg_age: 26.4,
+    rotation_depth: 90,
   },
 ];
 
