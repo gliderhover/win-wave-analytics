@@ -65,10 +65,13 @@ const LiveGamesPanel = ({ onSelectMatch }: LiveGamesPanelProps) => {
     id: String(f.id),
     teamHome: f.home?.name ?? "TBD",
     teamAway: f.away?.name ?? "TBD",
+    flagHome: "",
+    flagAway: "",
     league: f.league?.name ?? "",
     scoreHome: f.scores?.home ?? null,
     scoreAway: f.scores?.away ?? null,
     starting_at: f.starting_at,
+    modelProbs: { home: 33, draw: 34, away: 33 },
   }));
 
   const handleOpen = (m: { id: string; teamHome: string; teamAway: string }) => {
