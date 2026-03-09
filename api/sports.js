@@ -60,6 +60,34 @@ function mapFixture(f) {
   };
 }
 
+async function resolveSeasonIdForLeague(token, leagueIdsParam) {
+  const leagueIds = (leagueIdsParam || "779").toString().trim();
+  const url = `https://api.sportmonks.com/v3/football/seasons?api_token=${token}&include=league&filters=seasonLeagues:${encodeURIComponent(
+    leagueIds
+  )}`;
+  const r = await fetch(url);
+  const raw = await r.json();
+  if (!r.ok) {
+    const error = new Error("Sportmonks error while resolving seasons");
+    error.details = raw;
+    throw error;
+  }
+  const list = Array.isArray(raw?.data) ? raw.data : [];
+  if (list.length === 0) return { seasonId: null, seasons: [] };
+  const current = list.find((s) => s.is_current) || null;
+  const latest = list.slice().sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0];
+  const chosen = current || latest;
+  return {
+    seasonId: chosen?.id ?? null,
+    seasons: list.map((s) => ({
+      id: s.id,
+      name: s.name ?? "",
+      league_id: s.league_id ?? s.league?.id ?? null,
+      ...(s.is_current !== undefined && { is_current: s.is_current }),
+    })),
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
 
@@ -282,12 +310,280 @@ export default async function handler(req, res) {
         if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
         const leagueIdsParam = (q.leagueIds ?? "779").toString().trim();
         const leagueIds = leagueIdsParam || "779";
-        const r = await fetch(`https://api.sportmonks.com/v3/football/seasons?api_token=${token}&include=league&filters=seasonLeagues:${encodeURIComponent(leagueIds)}`);
+        try {
+          const { seasons } = await resolveSeasonIdForLeague(token, leagueIds);
+          return send({
+            ok: true,
+            source: "sportmonks",
+            leagueIds: leagueIds.split(",").map((id) => id.trim()),
+            count: seasons.length,
+            seasons,
+          });
+        } catch (e) {
+          return send({ ok: false, error: String(e) }, 500);
+        }
+      }
+
+      case "league_season": {
+        res.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate=86400");
+        if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
+        const leagueIdParam = (q.leagueId ?? "").toString().trim();
+        if (!leagueIdParam) return send({ ok: false, error: "Missing required query param: leagueId" }, 400);
+        try {
+          const { seasonId, seasons } = await resolveSeasonIdForLeague(token, leagueIdParam);
+          if (!seasonId) return send({ ok: false, error: "No seasons found for league", seasons }, 404);
+          return send({
+            ok: true,
+            leagueId: leagueIdParam,
+            seasonId,
+            seasons,
+            fetchedAt: new Date().toISOString(),
+          });
+        } catch (e) {
+          return send({ ok: false, error: String(e) }, 500);
+        }
+      }
+
+      case "elite_teams": {
+        res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=3600");
+        if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
+        const leagueIdParam = (q.leagueId ?? "").toString().trim();
+        if (!leagueIdParam) return send({ ok: false, error: "Missing required query param: leagueId" }, 400);
+        try {
+          const { seasonId } = await resolveSeasonIdForLeague(token, leagueIdParam);
+          if (!seasonId) return send({ ok: false, error: "No season found for league" }, 404);
+          const url = `https://api.sportmonks.com/v3/football/fixtures/seasons/${encodeURIComponent(
+            String(seasonId)
+          )}?api_token=${token}&include=${encodeURIComponent("participants;league")}`;
+          const r = await fetch(url);
+          const raw = await r.json();
+          if (!r.ok) return send({ ok: false, error: "Sportmonks error", details: raw }, r.status);
+          const list = Array.isArray(raw?.data) ? raw.data : [];
+          const map = new Map();
+          for (const f of list) {
+            const participants = f.participants ?? [];
+            for (const p of participants) {
+              if (!p || p.id == null) continue;
+              if (!map.has(p.id)) {
+                map.set(p.id, {
+                  id: p.id,
+                  name: p.name ?? p.short_code ?? "",
+                  short_code: p.short_code ?? null,
+                  image_path: p.image_path ?? p.logo_path ?? null,
+                });
+              }
+            }
+          }
+          const teams = Array.from(map.values()).sort((a, b) =>
+            String(a.name || "").localeCompare(String(b.name || ""))
+          );
+          return send({
+            ok: true,
+            leagueId: leagueIdParam,
+            seasonId,
+            count: teams.length,
+            teams,
+            fetchedAt: new Date().toISOString(),
+          });
+        } catch (e) {
+          return send({ ok: false, error: String(e) }, 500);
+        }
+      }
+
+      case "elite_team": {
+        res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=3600");
+        if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
+        const teamId = (q.teamId ?? "").toString().trim();
+        if (!teamId) return send({ ok: false, error: "Missing required query param: teamId" }, 400);
+        const url = `https://api.sportmonks.com/v3/football/teams/${encodeURIComponent(
+          teamId
+        )}?api_token=${token}&include=${encodeURIComponent("players;coach;venue")}`;
+        const r = await fetch(url);
         const raw = await r.json();
-        if (!r.ok) return send({ ok: false, error: "Sportmonks error", details: raw }, r.status);
-        const list = Array.isArray(raw?.data) ? raw.data : [];
-        const seasons = list.map((s) => ({ id: s.id, name: s.name ?? "", league_id: s.league_id ?? s.league?.id ?? null, ...(s.is_current !== undefined && { is_current: s.is_current }) }));
-        return send({ ok: true, source: "sportmonks", leagueIds: leagueIds.split(",").map((id) => id.trim()), count: seasons.length, seasons });
+        if (!r.ok || !raw?.data) return send({ ok: false, error: "Sportmonks error", details: raw }, r.status);
+        const t = raw.data;
+        const coach =
+          t.coach ??
+          (Array.isArray(t.coaches) && t.coaches.length > 0 ? t.coaches[0] : null);
+        const players = Array.isArray(t.players)
+          ? t.players.map((p) => ({
+              id: p.id,
+              name: p.name ?? "",
+              position: p.position ?? null,
+              number: p.number ?? p.shirt_number ?? null,
+              image_path: p.image_path ?? p.logo_path ?? null,
+            }))
+          : [];
+        const team = {
+          id: t.id,
+          name: t.name ?? "",
+          short_code: t.short_code ?? null,
+          image_path: t.image_path ?? t.logo_path ?? null,
+          country_id: t.country_id ?? null,
+          venue: t.venue ?? null,
+          league_id: t.league_id ?? null,
+        };
+        return send({
+          ok: true,
+          team,
+          coach: coach
+            ? {
+                id: coach.id,
+                name: coach.name ?? "",
+                nationality: coach.nationality ?? coach.country?.name ?? null,
+              }
+            : null,
+          players,
+          fetchedAt: new Date().toISOString(),
+        });
+      }
+
+      case "elite_player": {
+        res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=3600");
+        if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
+        const playerId = (q.playerId ?? "").toString().trim();
+        if (!playerId) return send({ ok: false, error: "Missing required query param: playerId" }, 400);
+        const url = `https://api.sportmonks.com/v3/football/players/${encodeURIComponent(
+          playerId
+        )}?api_token=${token}&include=${encodeURIComponent("statistics")}`;
+        const r = await fetch(url);
+        const raw = await r.json();
+        if (!r.ok || !raw?.data) return send({ ok: false, error: "Sportmonks error", details: raw }, r.status);
+        const p = raw.data;
+        const statsArr = Array.isArray(p.statistics) ? p.statistics : [];
+        const stats = statsArr[0] ?? {};
+        const age =
+          p.date_of_birth != null
+            ? (() => {
+                const dob = new Date(p.date_of_birth);
+                if (Number.isNaN(dob.getTime())) return null;
+                const diff = Date.now() - dob.getTime();
+                const years = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+                return years;
+              })()
+            : null;
+        const profile = {
+          id: p.id,
+          name: p.name ?? "",
+          age,
+          position: p.position ?? null,
+          goals: stats.goals?.total ?? stats.goals ?? null,
+          assists: stats.assists?.total ?? stats.assists ?? null,
+          minutes:
+            stats.minutes?.played ??
+            stats.minutes_played ??
+            stats.appearances_minutes ??
+            null,
+          image_path: p.image_path ?? p.logo_path ?? null,
+        };
+        return send({ ok: true, player: profile, fetchedAt: new Date().toISOString() });
+      }
+
+      case "elite_form": {
+        res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=900");
+        if (!token) return send({ ok: false, error: "Missing SPORTMONKS_API_TOKEN" }, 500);
+        const teamIdParam = (q.teamId ?? "").toString().trim();
+        if (!teamIdParam) return send({ ok: false, error: "Missing required query param: teamId" }, 400);
+        const teamIdNum = parseInt(teamIdParam, 10);
+        const nParam = parseInt((q.n ?? "10").toString(), 10);
+        const n = Number.isNaN(nParam) || nParam <= 0 ? 10 : nParam;
+
+        try {
+          const now = new Date();
+          const endDate = now.toISOString().slice(0, 10);
+          const start = new Date(now);
+          start.setUTCDate(start.getUTCDate() - 180);
+          const startDate = start.toISOString().slice(0, 10);
+          const url = `https://api.sportmonks.com/v3/football/fixtures/between/${startDate}/${endDate}?api_token=${token}&per_page=100&include=${encodeURIComponent(
+            "participants;scores"
+          )}`;
+          const r = await fetch(url);
+          const raw = await r.json();
+          if (!r.ok) return send({ ok: false, error: "Sportmonks error", details: raw }, r.status);
+          const list = Array.isArray(raw?.data) ? raw.data : [];
+
+          const relevant = [];
+          for (const f of list) {
+            const participants = f.participants ?? [];
+            const byId = participants.find((p) => p.id === teamIdNum);
+            if (!byId) continue;
+            const byLocationHome = participants.find((p) => p.meta?.location === "home");
+            const byLocationAway = participants.find((p) => p.meta?.location === "away");
+            const isHome =
+              byLocationHome?.id === teamIdNum ||
+              (!byLocationHome && participants[0]?.id === teamIdNum);
+
+            const scoresArr = Array.isArray(f.scores) ? f.scores : [];
+            let finalScore =
+              scoresArr.find(
+                (s) =>
+                  s.score_type === "ft" ||
+                  s.score_type === "fulltime" ||
+                  s.description === "FT"
+              ) || scoresArr[scoresArr.length - 1];
+            const homeGoals = finalScore?.home_score ?? 0;
+            const awayGoals = finalScore?.away_score ?? 0;
+            const teamGoals = isHome ? homeGoals : awayGoals;
+            const oppGoals = isHome ? awayGoals : homeGoals;
+            let result = "D";
+            if (teamGoals > oppGoals) result = "W";
+            else if (teamGoals < oppGoals) result = "L";
+
+            relevant.push({
+              id: f.id,
+              starting_at: f.starting_at,
+              home: byLocationHome
+                ? byLocationHome.name ?? byLocationHome.short_code ?? ""
+                : participants[0]?.name ?? "",
+              away: byLocationAway
+                ? byLocationAway.name ?? byLocationAway.short_code ?? ""
+                : participants[1]?.name ?? "",
+              isHome,
+              score: `${homeGoals}-${awayGoals}`,
+              result,
+            });
+          }
+
+          relevant.sort((a, b) =>
+            (b.starting_at || "").localeCompare(a.starting_at || "")
+          );
+          const lastMatches = relevant.slice(0, n);
+
+          const m = lastMatches.length || 1;
+          let wins = 0;
+          let goalsFor = 0;
+          let goalsAgainst = 0;
+          let cleanSheets = 0;
+          let btts = 0;
+          for (const match of lastMatches) {
+            const [hg, ag] = match.score.split("-").map((x) => parseInt(x, 10) || 0);
+            const teamGoals = match.isHome ? hg : ag;
+            const oppGoals = match.isHome ? ag : hg;
+            goalsFor += teamGoals;
+            goalsAgainst += oppGoals;
+            if (teamGoals > oppGoals) wins += 1;
+            if (oppGoals === 0) cleanSheets += 1;
+            if (teamGoals > 0 && oppGoals > 0) btts += 1;
+          }
+
+          const stats = {
+            winRate: +((wins / m) * 100).toFixed(1),
+            goalsForPerGame: +(goalsFor / m).toFixed(2),
+            goalsAgainstPerGame: +(goalsAgainst / m).toFixed(2),
+            cleanSheetRate: +((cleanSheets / m) * 100).toFixed(1),
+            bttsRate: +((btts / m) * 100).toFixed(1),
+          };
+
+          return send({
+            ok: true,
+            teamId: teamIdParam,
+            lastMatches,
+            stats,
+            fetchedAt: new Date().toISOString(),
+          });
+        } catch (e) {
+          return send({ ok: false, error: String(e) }, 500);
+        }
       }
 
       case "ai_insight": {
