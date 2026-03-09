@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Crown, Users, User, Briefcase } from "lucide-react";
+import { eliteTeams, elitePlayers, eliteCoaches } from "@/lib/eliteData";
 import {
   RadarChart,
   PolarGrid,
@@ -520,13 +521,24 @@ const Elite = () => {
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
-  const teams = teamsData?.teams ?? [];
+  const useMockElite = !!teamsError;
+
+  const teams: EliteTeamLite[] = useMockElite
+    ? eliteTeams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        short_code: t.country.slice(0, 3).toUpperCase(),
+        image_path: t.photo_url || null,
+      }))
+    : (teamsData?.teams ?? []);
 
   useEffect(() => {
     if (!selectedTeamId && teams.length > 0) {
       setSelectedTeamId(String(teams[0].id));
     }
   }, [selectedTeamId, teams]);
+
+  const enableRealTeamQueries = !!selectedTeamId && !useMockElite;
 
   const {
     data: teamDetail,
@@ -548,7 +560,7 @@ const Elite = () => {
         fetchedAt: string;
       };
     },
-    enabled: !!selectedTeamId,
+    enabled: enableRealTeamQueries,
     staleTime: 60 * 1000,
     retry: 1,
   });
@@ -573,22 +585,122 @@ const Elite = () => {
         fetchedAt: string;
       };
     },
-    enabled: !!selectedTeamId,
+    enabled: enableRealTeamQueries,
     staleTime: 60 * 1000,
     retry: 1,
   });
 
-  const isLoading = loadingTeams || loadingTeamDetail || loadingForm;
+  const isLoading =
+    (!useMockElite && (loadingTeams || loadingTeamDetail || loadingForm)) ||
+    (!useMockElite && !teamsData && !teamsError);
+
+  let effectiveCoach: EliteCoachLite | null = teamDetail?.coach ?? null;
+  let effectivePlayers: ElitePlayerLite[] =
+    (teamDetail?.players as ElitePlayerLite[]) ?? [];
+  let effectiveFormStats: EliteFormStats | null = formDetail?.stats ?? null;
+  let effectiveLastMatches: any[] = formDetail?.lastMatches ?? [];
+  let effectiveFetchedAt: string | null =
+    formDetail?.fetchedAt ?? teamDetail?.fetchedAt ?? null;
+
+  if (useMockElite) {
+    const fallbackTeam =
+      eliteTeams.find((t) => t.id === selectedTeamId) ?? eliteTeams[0];
+    const mockCoach =
+      eliteCoaches.find((c) => c.team === fallbackTeam?.name) ?? null;
+    const mockPlayersRaw = elitePlayers.filter(
+      (p) => p.country === fallbackTeam?.country,
+    );
+
+    if (fallbackTeam) {
+      const trend = fallbackTeam.form_trend ?? [];
+      const n = trend.length || 1;
+      const wins = trend.filter((r) => r === "W").length;
+      const draws = trend.filter((r) => r === "D").length;
+      const losses = trend.filter((r) => r === "L").length;
+
+      let goalsFor = 0;
+      let goalsAgainst = 0;
+      trend.forEach((r) => {
+        if (r === "W") {
+          goalsFor += 2;
+          goalsAgainst += 1;
+        } else if (r === "D") {
+          goalsFor += 1;
+          goalsAgainst += 1;
+        } else if (r === "L") {
+          goalsFor += 0;
+          goalsAgainst += 1;
+        }
+      });
+
+      const matchesCount = n;
+      effectiveFormStats = {
+        winRate: +((wins / matchesCount) * 100).toFixed(1),
+        goalsForPerGame: +(goalsFor / matchesCount).toFixed(2),
+        goalsAgainstPerGame: +(goalsAgainst / matchesCount).toFixed(2),
+        cleanSheetRate: +(
+          (trend.filter((r) => r === "W").length / matchesCount) *
+          100
+        ).toFixed(1),
+        bttsRate: +(
+          (trend.filter((r) => r === "W" || r === "D").length / matchesCount) *
+          100
+        ).toFixed(1),
+      };
+
+      effectiveLastMatches = trend.map((r, idx) => {
+        const id = `mock-${fallbackTeam.id}-${idx}`;
+        const opponent =
+          idx % 2 === 0
+            ? "Germany"
+            : idx % 3 === 0
+              ? "Argentina"
+              : "France";
+        let score = "1-1";
+        if (r === "W") score = "2-1";
+        else if (r === "L") score = "0-1";
+        const isHome = idx % 2 === 0;
+        return {
+          id,
+          starting_at: "",
+          home: isHome ? fallbackTeam.name : opponent,
+          away: isHome ? opponent : fallbackTeam.name,
+          isHome,
+          score,
+          result: r,
+        };
+      });
+
+      effectiveFetchedAt = fallbackTeam.last_updated ?? null;
+    }
+
+    effectiveCoach = mockCoach
+      ? {
+          id: mockCoach.id,
+          name: mockCoach.name,
+          nationality: mockCoach.country,
+        }
+      : null;
+
+    effectivePlayers = mockPlayersRaw.map((p) => ({
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      number: null,
+      image_path: p.photo_url || null,
+      goals: null,
+    }));
+  }
 
   const tabContentProps = {
     teams,
     selectedTeamId,
     onSelectTeam: setSelectedTeamId,
-    coach: teamDetail?.coach ?? null,
-    players: (teamDetail?.players as ElitePlayerLite[]) ?? [],
-    formStats: formDetail?.stats ?? null,
-    lastMatches: formDetail?.lastMatches ?? [],
-    fetchedAt: formDetail?.fetchedAt ?? teamDetail?.fetchedAt ?? null,
+    coach: effectiveCoach,
+    players: effectivePlayers,
+    formStats: effectiveFormStats,
+    lastMatches: effectiveLastMatches,
+    fetchedAt: effectiveFetchedAt,
   };
 
   const content = (
