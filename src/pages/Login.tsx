@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Eye, EyeOff, BarChart3, Bell, Crown } from "lucide-react";
+import { Activity, Eye, EyeOff, BarChart3, Bell, Crown, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,19 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from || "/dashboard";
+
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get("redirect");
+
+  const handleReturn = () => {
+    if (redirect) {
+      navigate(redirect, { replace: true });
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/", { replace: true });
+    }
+  };
 
   const validate = () => {
     const e: typeof errors = {};
@@ -47,10 +60,14 @@ const Login = () => {
     <div className="min-h-screen bg-background flex">
       {/* Left marketing panel */}
       <div className="hidden lg:flex flex-col justify-center w-[420px] p-12 bg-card border-r border-border">
-        <div className="flex items-center gap-2 mb-10">
+        <button
+          type="button"
+          onClick={handleReturn}
+          className="flex items-center gap-2 mb-10 text-left hover:opacity-90 transition-opacity"
+        >
           <Activity className="w-7 h-7 text-primary" />
           <span className="font-bold text-xl text-foreground">BetIQ</span>
-        </div>
+        </button>
         <h2 className="text-2xl font-bold text-foreground mb-6">
           Sharper edges.<br />Smarter bets.
         </h2>
@@ -72,6 +89,16 @@ const Login = () => {
       {/* Right form */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm space-y-6">
+          <div className="flex items-center justify-start">
+            <button
+              type="button"
+              onClick={handleReturn}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <ArrowLeft className="w-3 h-3" />
+              <span>Back</span>
+            </button>
+          </div>
           <div className="text-center lg:text-left">
             <h1 className="text-2xl font-bold text-foreground">Log in</h1>
             <p className="text-sm text-muted-foreground mt-1">Access Simulation, Leaderboards, and saved watchlists.</p>
