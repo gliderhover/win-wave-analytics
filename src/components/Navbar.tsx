@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useUserTier, Tier } from "@/contexts/UserTierContext";
