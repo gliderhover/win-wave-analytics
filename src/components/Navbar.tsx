@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Activity, Crown, Lock, ChevronDown, LogOut, User, Briefcase, BarChart3, Menu } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useUserTier, Tier } from "@/contexts/UserTierContext";
@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
 const navLinks = [
   { to: "/dashboard", labelKey: "nav.dashboard" },
@@ -40,6 +41,7 @@ const Navbar = () => {
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Optional: fetch for analytics/background; dropdown uses allowedLeagues only
   useQuery({
@@ -142,10 +144,50 @@ const Navbar = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* Mobile hamburger */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger className="md:hidden p-2 rounded-md hover:bg-secondary transition-colors">
+              <Menu className="w-5 h-5 text-foreground" />
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 bg-background border-border">
+              <SheetTitle className="flex items-center gap-2 mb-6">
+                <Activity className="w-5 h-5 text-primary" />
+                <span className="font-bold text-foreground">BetIQ</span>
+              </SheetTitle>
+              <nav className="flex flex-col gap-1">
+                {navLinks.map(link => {
+                  const locked = link.requiresTier && !hasAccess(link.requiresTier);
+                  const isActive = location.pathname === link.to || location.pathname.startsWith(link.to + "/");
+                  return (
+                    <Link
+                      key={link.to}
+                      to={locked ? "/pricing" : link.to}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "text-sm px-3 py-2.5 rounded-md transition-colors flex items-center gap-2",
+                        isActive
+                          ? "text-foreground bg-secondary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                        locked && "opacity-60"
+                      )}
+                    >
+                      {t(link.labelKey)}
+                      {link.isNew && (
+                        <span className="text-[8px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full border border-primary/30 leading-none">{t("nav.new")}</span>
+                      )}
+                      {locked && <Lock className="w-3 h-3" />}
+                      {link.requiresTier === "elite" && !locked && <Crown className="w-3 h-3 text-primary" />}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           <LanguageSwitcher />
 
           {/* Tier selector */}
-          <div className="flex items-center bg-secondary rounded-lg border border-border p-0.5">
+          <div className="hidden sm:flex items-center bg-secondary rounded-lg border border-border p-0.5">
             {tiers.map(t => (
               <button
                 key={t}
@@ -198,7 +240,7 @@ const Navbar = () => {
               {tier === "base" && (
                 <Link
                   to="/pricing"
-                  className="text-sm gradient-primary text-primary-foreground font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5"
+                  className="hidden sm:flex text-sm gradient-primary text-primary-foreground font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity items-center gap-1.5"
                 >
                   <Crown className="w-3.5 h-3.5" />
                   {t("nav.upgrade")}

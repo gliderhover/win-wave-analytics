@@ -337,7 +337,7 @@ const Matches = () => {
         id: base.id,
         starting_at: "",
         state_id: null,
-        league: { id: "", name: "", season_id: null },
+        league: { id: "", name: "" },
         home: { id: null, name: base.home },
         away: { id: null, name: base.away },
         // View fields mapped from mock template
