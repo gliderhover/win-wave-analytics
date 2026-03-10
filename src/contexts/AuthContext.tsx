@@ -1,4 +1,12 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+} from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface User {
   id: string;
@@ -21,72 +29,116 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const STORAGE_KEY = "betiq_auth_user";
-const ACCOUNTS_KEY = "betiq_accounts";
+function mapUser(supabaseUser: any): User {
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email ?? "",
+    displayName:
+      supabaseUser.user_metadata?.displayName ||
+      supabaseUser.user_metadata?.full_name ||
+      supabaseUser.email?.split("@")[0] ||
+      "User",
+    avatarUrl: supabaseUser.user_metadata?.avatar_url ?? undefined,
+    createdAt: supabaseUser.created_at ?? new Date().toISOString(),
+  };
+}
 
-// TODO: Replace localStorage mock with Supabase Auth
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try { setUser(JSON.parse(stored)); } catch {}
-    }
-    setLoading(false);
-  }, []);
+    let isMounted = true;
 
-  const getAccounts = (): Record<string, { password: string; user: User }> => {
-    try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}"); } catch { return {}; }
-  };
+    const init = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("[auth] getSession error", error);
+        setError(error.message);
+      }
+      if (data?.session?.user) {
+        setUser(mapUser(data.session.user));
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    };
+
+    init();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        setUser(mapUser(session.user));
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const accounts = getAccounts();
-    const account = accounts[email.toLowerCase()];
-    if (!account || account.password !== password) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setError(error.message);
       setLoading(false);
-      throw new Error("Invalid email or password");
+      throw new Error(error.message);
     }
-    setUser(account.user);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(account.user));
+    if (data.session?.user) {
+      setUser(mapUser(data.session.user));
+    }
     setLoading(false);
   }, []);
 
-  const signup = useCallback(async (email: string, password: string, displayName: string) => {
-    setError(null);
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const accounts = getAccounts();
-    if (accounts[email.toLowerCase()]) {
+  const signup = useCallback(
+    async (email: string, password: string, displayName: string) => {
+      setError(null);
+      setLoading(true);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { displayName },
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        throw new Error(error.message);
+      }
+      if (data.session?.user) {
+        setUser(mapUser(data.session.user));
+      }
       setLoading(false);
-      throw new Error("An account with this email already exists");
-    }
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      email: email.toLowerCase(),
-      displayName,
-      createdAt: new Date().toISOString(),
-    };
-    accounts[email.toLowerCase()] = { password, user: newUser };
-    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
-    setUser(newUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
-    setLoading(false);
-  }, []);
+    },
+    [],
+  );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   const resetPassword = useCallback(async (_email: string) => {
-    await new Promise(r => setTimeout(r, 600));
-    // Mock: always succeeds
+    await supabase.auth.resetPasswordForEmail(_email, {
+      redirectTo: `${window.location.origin}/login`,
+    });
   }, []);
 
   const clearError = useCallback(() => setError(null), []);

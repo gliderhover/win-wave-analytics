@@ -18,10 +18,9 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from || "/dashboard";
 
   const params = new URLSearchParams(location.search);
-  const redirect = params.get("redirect");
+  const redirect = params.get("redirect") || "/dashboard";
 
   const handleReturn = () => {
     if (redirect) {
@@ -48,7 +47,7 @@ const Login = () => {
     try {
       await login(email, password);
       toast({ title: "Welcome back! 👋" });
-      navigate(from, { replace: true });
+      navigate(redirect, { replace: true });
     } catch (err: any) {
       toast({ title: "Login failed", description: err.message, variant: "destructive" });
     } finally {

@@ -68,8 +68,8 @@ const Navbar = () => {
     setSelectedLeague(`sm:${DEFAULT_LEAGUE_ID}`);
   }, [selectedApiId, setSelectedLeague]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
